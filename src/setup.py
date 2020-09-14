@@ -34,6 +34,7 @@ setup(
         'spaceone-core',
         'spaceone-api',
         'spaceone-tester',
+        'spaceone-monitoring'
         'google-auth',
         'google-api-python-client',
         'schematics'
