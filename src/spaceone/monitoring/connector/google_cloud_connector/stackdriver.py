@@ -5,12 +5,12 @@ from datetime import datetime, timedelta
 from spaceone.core import utils
 from spaceone.monitoring.error import *
 
-__all__ = ['CloudWatch']
+__all__ = ['StackDriver']
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class CloudWatch(object):
+class StackDriver(object):
 
     def __init__(self, session):
         self.session = session
