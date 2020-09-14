@@ -2,7 +2,7 @@ import logging
 import time
 
 from spaceone.core.manager import BaseManager
-from spaceone.monitoring.connector.
+from spaceone.monitoring.connector.google_cloud_stackdriver_connector import GoogleCloudStackDriverConnector
 from spaceone.monitoring.error import *
 
 _LOGGER = logging.getLogger(__name__)
