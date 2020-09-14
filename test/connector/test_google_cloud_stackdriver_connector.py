@@ -23,7 +23,7 @@ class TestGoogleCloudConnector(unittest.TestCase):
         cls.resource = test_config.get('RESOURCE')
         cls.metric = test_config.get('METRIC')
 
-        cls.aws_connector = AWSBotoConnector(Transaction(), {})
+        #cls.aws_connector = AWSBotoConnector(Transaction(), {})
         super().setUpClass()
 
     @classmethod
