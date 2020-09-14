@@ -2,7 +2,7 @@ import logging
 import time
 
 from spaceone.core.manager import BaseManager
-from spaceone.monitoring.connector.aws_boto_connector import AWSBotoConnector
+from spaceone.monitoring.connector.
 from spaceone.monitoring.error import *
 
 _LOGGER = logging.getLogger(__name__)
@@ -15,14 +15,18 @@ _STAT_MAP = {
 }
 
 
-class AWSManager(BaseManager):
+class GoogleCloudManager(BaseManager):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.aws_connector: AWSBotoConnector = self.locator.get_connector('AWSBotoConnector')
 
     def verify(self, options, secret_data):
-        self.aws_connector.create_session(options, secret_data)
+        """ Check connection
+        """
+        self.google_cloud_connector = self.locator.get_connector('StackDriver')
+        r = self.google_cloud_connector.verify(options, secret_data)
+        # ACTIVE/UNKNOWN
+        return r
 
     def list_metrics(self, options, secret_data, resource):
         if 'region_name' in resource:

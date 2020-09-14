@@ -1,1 +1,1 @@
-from spaceone.monitoring.connector.aws_boto_connector import AWSBotoConnector
+from spaceone.monitoring.connector.google_cloud_connetor import Stackdriver
