@@ -1,7 +1,6 @@
 __all__ = ["GoogleCloudStackDriverConnector"]
 
 import logging
-import os
 import google.oauth2.service_account
 import googleapiclient
 import googleapiclient.discovery
@@ -30,7 +29,7 @@ class GoogleCloudStackDriverConnector(BaseConnector):
         try:
             self.project_id = secret_data.get('project_id')
             credentials = google.oauth2.service_account.Credentials.from_service_account_info(secret_data)
-            self.client = googleapiclient.discovery.build('compute', 'v1', credentials=credentials)
+            self.client = googleapiclient.discovery.build('monitoring', 'v1', credentials=credentials)
         except Exception as e:
             print(e)
             raise self.client(message='connection failed. Please check your authentication information.')
