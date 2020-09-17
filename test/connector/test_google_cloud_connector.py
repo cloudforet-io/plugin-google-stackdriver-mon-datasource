@@ -46,7 +46,7 @@ class TestGoogleCloudStackDriverConnector(TestCase):
     def test_get_connect_with_google_service_key(self):
         options = {}
         secret_data = self.secret_data
-        self.gcp_connector.get_connect(options, secret_data)
+        self.gcp_connector.set_connect(options, secret_data)
 
     def test_list_metrics(self):
         gcp_mgr = GoogleCloudManager()
@@ -57,7 +57,7 @@ class TestGoogleCloudStackDriverConnector(TestCase):
 
     def test_get_metric_data(self):
         gcp_mgr = GoogleCloudManager()
-        namespace, dimensions = gcp_mgr._get_cloudwatch_query(self.resource)
+        namespace, dimensions = gcp_mgr._get_stackdriver_query(self.resource)
         self.aws_credentials['region_name'] = self.resource.get('region_name')
 
         end = datetime.utcnow()

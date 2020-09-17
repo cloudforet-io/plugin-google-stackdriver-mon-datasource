@@ -15,42 +15,40 @@ _STAT_MAP = {
 
 
 class GoogleCloudManager(BaseManager):
-    gcp_connector = None
+    google_cloud_connector = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def verify(self, options, secret_data):
+    def verify(self, schema, options, secret_data):
         """ Check connection
         """
-        self.google_cloud_connector = self.locator.get_connector('StackDriver')
-        r = self.google_cloud_connector.verify(options, secret_data)
-        # ACTIVE/UNKNOWN
-        return r
+        self.google_cloud_connector: GoogleCloudConnector = self.locator.get_connector('GoogleCloudConnector')
+        self.google_cloud_connector.set_connect(schema, options, secret_data)
 
-    def set_connector(self, secret_data):
-        self.gcp_connector: GoogleCloudConnector = self.locator.get_connector('GoogleCloudConnector')
-        self.gcp_connector.get_connect({}, secret_data)
+    def set_connector(self, schema, secret_data):
+        self.google_cloud_connector: GoogleCloudConnector = self.locator.get_connector('GoogleCloudConnector')
+        self.google_cloud_connector.set_connect(schema, {}, secret_data)
 
-    def list_metrics(self, options, secret_data):
-        namespace, dimensions = self._get_cloudwatch_query(resource)
+    def list_metrics(self, schema, options, secret_data, resource):
+        namespace, dimensions = self._get_stackdriver_query(resource)
 
-        self.aws_connector.create_session(options, secret_data)
-        return self.aws_connector.list_metrics(namespace, dimensions)
+        self.google_cloud_connector.set_connect(schema, options, secret_data)
+        return self.google_cloud_connector.list_metrics(namespace, dimensions)
 
-    def get_metric_data(self, options, secret_data, resource, metric, start, end, period, stat):
+    def get_metric_data(self, schema, options, secret_data, resource, metric, start, end, period, stat):
         if 'region_name' in resource:
             secret_data['region_name'] = resource.get('region_name')
 
-        namespace, dimensions = self._get_cloudwatch_query(resource)
+        namespace, dimensions = self._get_stackdriver_query(resource)
 
         if period is None:
             period = self._make_period_from_time_range(start, end)
 
         stat = self._convert_stat(stat)
 
-        self.aws_connector.create_session(options, secret_data)
-        return self.aws_connector.get_metric_data(namespace, dimensions, metric, start, end, period, stat)
+        self.google_cloud_connector.set_connect(schema, options, secret_data)
+        return self.google_cloud_connector.get_metric_data(namespace, dimensions, metric, start, end, period, stat)
 
     @staticmethod
     def _convert_stat(stat):
@@ -89,5 +87,5 @@ class GoogleCloudManager(BaseManager):
             return 60*60*24
 
     @staticmethod
-    def _get_cloudwatch_query(resource):
+    def _get_stackdriver_query(resource):
         return resource.get('namespace'), resource.get('dimensions')
