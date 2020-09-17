@@ -3,8 +3,11 @@ from spaceone.api.core.v1 import plugin_pb2
 from spaceone.core.pygrpc.message_type import *
 
 
-__all__ = ['PluginVerifyResponse']
+__all__ = ['PluginInfo', 'PluginAction', 'PluginVerifyInfo', 'PluginVerifyResponse']
 
+def PluginInfo(result):
+    result['metadata'] = change_struct_type(result['metadata'])
+    return plugin_pb2.PluginInfo(**result)
 
 def PluginAction(action):
     info = {

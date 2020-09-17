@@ -33,7 +33,6 @@ setup(
     install_requires=[
         'spaceone-core',
         'spaceone-api',
-        'spaceone-tester',
         'google-auth',
         'google-api-python-client',
         'schematics'

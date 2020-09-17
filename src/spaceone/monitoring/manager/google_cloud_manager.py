@@ -2,9 +2,8 @@ import logging
 import time
 
 from spaceone.core.manager import BaseManager
-from spaceone.monitoring.connector.google_cloud_stackdriver_connector import GoogleCloudStackDriverConnector
 from spaceone.monitoring.error import *
-
+from spaceone.monitoring.connector.google_cloud_connector import GoogleCloudConnector
 _LOGGER = logging.getLogger(__name__)
 
 _STAT_MAP = {
@@ -16,6 +15,7 @@ _STAT_MAP = {
 
 
 class GoogleCloudManager(BaseManager):
+    gcp_connector = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,10 +28,11 @@ class GoogleCloudManager(BaseManager):
         # ACTIVE/UNKNOWN
         return r
 
-    def list_metrics(self, options, secret_data, resource):
-        if 'region_name' in resource:
-            secret_data['region_name'] = resource.get('region_name')
+    def set_connector(self, secret_data):
+        self.gcp_connector: GoogleCloudConnector = self.locator.get_connector('GoogleCloudConnector')
+        self.gcp_connector.get_connect({}, secret_data)
 
+    def list_metrics(self, options, secret_data):
         namespace, dimensions = self._get_cloudwatch_query(resource)
 
         self.aws_connector.create_session(options, secret_data)

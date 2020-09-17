@@ -1,0 +1,28 @@
+{
+    "metrics":[
+        "agent.googleapis.com/cpu/utilization",
+        "agent.googleapis.com/cpu/usage_time",
+        "agent.googleapis.com/cpu/load_5m",
+        "agent.googleapis.com/cpu/load_1m",
+        "agent.googleapis.com/cpu/load_15m",
+        "agent.googleapis.com/memory/percent_used",
+        "agent.googleapis.com/memory/bytes_used",
+        "agent.googleapis.com/disk/write_bytes_count",
+        "agent.googleapis.com/disk/weighted_io_time",
+        "agent.googleapis.com/disk/read_bytes_count",
+        "agent.googleapis.com/disk/percent_used",
+        "agent.googleapis.com/disk/pending_operations",
+        "agent.googleapis.com/disk/operation_time",
+        "agent.googleapis.com/disk/operation_count",
+        "agent.googleapis.com/disk/merged_operations",
+        "agent.googleapis.com/disk/io_time",
+        "agent.googleapis.com/disk/bytes_used",
+        "agent.googleapis.com/interface/traffic",
+        "agent.googleapis.com/interface/packets",
+        "agent.googleapis.com/interface/errors",
+        "compute.googleapis.com/instance/network/sent_packets_count",
+        "compute.googleapis.com/instance/network/sent_bytes_count",
+        "compute.googleapis.com/instance/network/received_packets_count",
+        "compute.googleapis.com/instance/network/received_bytes_count"
+    ]
+}
