@@ -34,7 +34,7 @@ class TestMetricManager(unittest.TestCase):
 
         aws_mgr = AWSManager()
         arn = aws_mgr._parse_arn(resource)
-        namespace, dimensions = aws_mgr._get_cloudwatch_query(arn, resource)
+        namespace, dimensions = aws_mgr._get_stackdriver_query(arn, resource)
         print_data(namespace, 'test_get_cloudwatch_query.namespace')
         print_data(dimensions, 'test_get_cloudwatch_query.dimensions')
 

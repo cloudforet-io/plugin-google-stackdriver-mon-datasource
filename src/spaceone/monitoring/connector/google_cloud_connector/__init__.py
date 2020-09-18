@@ -15,7 +15,7 @@ class GoogleCloudConnector(BaseConnector):
         self.project_id = None
         super().__init__(transaction, config)
 
-    def get_connect(self, options: dict, secret_data: dict):
+    def set_connect(self, schema, options: dict, secret_data: dict):
         """
         cred(dict)
             - type: ..
