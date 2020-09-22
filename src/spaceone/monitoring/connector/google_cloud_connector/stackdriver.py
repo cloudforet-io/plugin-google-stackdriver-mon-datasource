@@ -45,11 +45,11 @@ class StackDriver(object):
         }
 
         for metric_data in response:
-            metric_points = metric_data.get('points', []).sort(reverse=True)
-            m_points = metric_points.reverse()
+            metric_points = metric_data.get('points', [])
+            m_points = sorted(metric_points, key=lambda point: (point['interval']['startTime']))
             time_stamps = []
             values = []
-            for metric_point in metric_points:
+            for metric_point in m_points:
                 interval = metric_point.get('interval', {})
                 value = metric_point.get('value', {})
                 time_stamps.append(self._get_time_stamps(interval))
@@ -107,7 +107,7 @@ class StackDriver(object):
             'aggregation_crossSeriesReducer': 'REDUCE_NONE',
             'aggregation_perSeriesAligner': aligner,
             'interval_endTime': end,
-            'interval_endTime': start,
+            'interval_startTime': start,
             'view': 'FULL'
         })
         return query

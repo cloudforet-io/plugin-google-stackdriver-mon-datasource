@@ -96,9 +96,9 @@ class TestGoogleCloudStackDriverConnector(TestCase):
                        'resource_value': '1873022307818018997'
                    },
                    'aligner': 'ALIGN_SUM',
-                   'start': '2020-09-12T04:48:00Z',
-                   'end': '2020-09-01T00:00:00Z',
-                   'interval': '10800s'
+                   'start': '2020-09-01T00:00:00Z',
+                   'end': '2020-09-21T04:48:00Z',
+                   'interval': '362880s'
                    }
 
         metrics_info = self.gcp_connector.get_metric_data(
