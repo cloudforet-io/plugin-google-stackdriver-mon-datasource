@@ -1,13 +1,12 @@
 import logging
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from spaceone.core import utils
 from pprint import pprint
 from spaceone.monitoring.error import *
 
 __all__ = ['StackDriver']
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -17,104 +16,101 @@ class StackDriver(object):
         self.client = client
         self.project_id = project_id
 
-    def get_metric_descriptors(self):
-        name = f'projects/{self.project_id}'
-        response = self.client.metricDescriptors().list(name=name, filter=self._get_metric_filter()).execute()
-        return response.get('metricDescriptors', [])
-
-    def list_metrics(self):
-        list_google_cloud_metrics = self.get_metric_descriptors()
+    def list_metrics(self, resource_type=None):
+        list_google_cloud_metrics = self.list_metric_descriptors(resource_type)
         metrics_info = []
 
-        for response in list_google_cloud_metrics:
-            print('----metrics--')
-            print()
-            pprint(response)
-            print()
-            print('------------')
-            # list_google_cloud_metrics =
-            #     metric_info = {
-            #         'key': metric_name,
-            #         'name': metric_name,
-            #         'unit': unit,
-            #         'chart_type': chart_type,
-            #         'chart_options': chart_option
-            #     }
-            #
-            #     metrics_info.append(metric_info)
+        for gc_metric in list_google_cloud_metrics:
+            gc_metric_info = {
+                'name': gc_metric.get('name', ''),
+                'type': gc_metric.get('type', ''),
+                'description': gc_metric.get('description', ''),
+                'view': 'FULL',
+                'resource': 'gce_instance'
+            }
+
+            metrics_info.append(gc_metric_info)
+
         return {
             'metrics': metrics_info
         }
 
-    @staticmethod
-    def _get_metric_filter():
-        resource_type = {
-            "metrics": [
-                "agent.googleapis.com/cpu/utilization",
-                "agent.googleapis.com/cpu/usage_time",
-                "agent.googleapis.com/cpu/load_5m",
-                "agent.googleapis.com/cpu/load_1m",
-                "agent.googleapis.com/cpu/load_15m",
-                "agent.googleapis.com/memory/percent_used",
-                "agent.googleapis.com/memory/bytes_used",
-                "agent.googleapis.com/disk/write_bytes_count",
-                "agent.googleapis.com/disk/weighted_io_time",
-                "agent.googleapis.com/disk/read_bytes_count",
-                "agent.googleapis.com/disk/percent_used",
-                "agent.googleapis.com/disk/pending_operations",
-                "agent.googleapis.com/disk/operation_time",
-                "agent.googleapis.com/disk/operation_count",
-                "agent.googleapis.com/disk/merged_operations",
-                "agent.googleapis.com/disk/io_time",
-                "agent.googleapis.com/disk/bytes_used",
-                "agent.googleapis.com/interface/traffic",
-                "agent.googleapis.com/interface/packets",
-                "agent.googleapis.com/interface/errors",
-                "compute.googleapis.com/instance/network/sent_packets_count",
-                "compute.googleapis.com/instance/network/sent_bytes_count",
-                "compute.googleapis.com/instance/network/received_packets_count",
-                "compute.googleapis.com/instance/network/received_bytes_count"
-            ]
-        }
-        return "metric.type = one_of(" + "'" + "','".join(resource_type.get('metrics', [])) + "'"
+    def get_metric_data(self, metric_type, resource, aligner, start, end, interval):
 
-    def get_metric_data(self, namespace, dimensions, metric_name, start, end, period, stat, limit=None):
-        metric_id = f'metric_{utils.random_string()[:12]}'
-
-        extra_opts = {}
-
-        if limit:
-            extra_opts['MaxDatapoints'] = limit
-
-        response = self.client.get_metric_data(
-            MetricDataQueries=[{
-                'Id': metric_id,
-                'MetricStat': {
-                    'Metric': {
-                        'Namespace': namespace,
-                        'MetricName': metric_name,
-                        'Dimensions': dimensions
-                    },
-                    'Period': period,
-                    'Stat': stat
-                }
-            }],
-            StartTime=start,
-            EndTime=end,
-            ScanBy='TimestampAscending',
-            **extra_opts
-        )
+        response = self.list_metrics_time_series(metric_type, resource, aligner, start, end, interval)
 
         metric_data_info = {
             'labels': [],
             'values': []
         }
 
-        for metric_data in response.get('MetricDataResults', []):
-            metric_data_info['labels'] = list(map(self._convert_timestamp, metric_data['Timestamps']))
-            metric_data_info['values'] += metric_data['Values']
+        for metric_data in response:
+            metric_points = metric_data.get('points', []).sort(reverse=True)
+            m_points = metric_points.reverse()
+            time_stamps = []
+            values = []
+            for metric_point in metric_points:
+                interval = metric_point.get('interval', {})
+                value = metric_point.get('value', {})
+                time_stamps.append(self._get_time_stamps(interval))
+                values.append(value.get('doubleValue', 0))
 
+            metric_data_info['labels'] = list(map(self._convert_timestamp, time_stamps))
+            metric_data_info['values'] = values
         return metric_data_info
+
+    def list_metric_descriptors(self, resource_type, **query):
+        query = self.get_list_metric_query(resource_type, **query)
+        response = self.client.projects().metricDescriptors().list(**query).execute()
+        return response.get('metricDescriptors', [])
+
+    def list_metrics_time_series(self, metric_type, resource, aligner, start, end, interval, **query):
+        query = self.get_metric_data_query(metric_type, resource, aligner, start, end, interval, **query)
+        try:
+            response = self.client.projects().timeSeries().list(**query).execute()
+            return response.get('timeSeries', [])
+        except Exception as e:
+            print(e)
+
+    def get_list_metric_query(self, resource_type, **query):
+        '''
+            name: projects/project_id
+            filter: metric.type= one_of()
+            pageSize : [optional]
+            PageToken : [optional]
+            reference : https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors/list
+        '''
+        query.update({
+            'name': self._get_name(self.project_id),
+            'filter': self._get_list_metric_filter(resource_type)
+        })
+        return query
+
+    def get_metric_data_query(self, metric_type: str, resource: dict, aligner: str, start, end, interval, **query):
+
+        '''
+            SAMPLE
+            "name": 'projects/286919713412',
+            "aggregation.alignmentPeriod": '362880s',
+            "aggregation.crossSeriesReducer": 'REDUCE_NONE',
+            "aggregation.perSeriesAligner": 'ALIGN_SUM',
+            "filter": 'metric.type="compute.googleapis.com/instance/cpu/utilization" AND resource.type="gce_instance"',
+            "interval.endTime" : 2020-08-09T04:48:00Z,
+            "interval.startTime": 2020-08-06T00:00:00Z,
+            "view": 'FULL'
+        '''
+
+        query.update({
+            'name': self._get_name(self.project_id),
+            'filter': self._get_metric_data_filter(metric_type, resource),
+            'aggregation_alignmentPeriod': interval,
+            'aggregation_crossSeriesReducer': 'REDUCE_NONE',
+            'aggregation_perSeriesAligner': aligner,
+            'interval_endTime': end,
+            'interval_endTime': start,
+            'view': 'FULL'
+        })
+        return query
 
     @staticmethod
     def _convert_timestamp(metric_datetime):
@@ -123,34 +119,46 @@ class StackDriver(object):
             'seconds': timestamp
         }
 
-    def _get_metric_unit(self, namespace, dimensions, metric_name):
-        end = datetime.utcnow()
-        start = end - timedelta(minutes=60)
-
-        response = self.client.get_metric_statistics(
-            Namespace=namespace,
-            Dimensions=dimensions,
-            MetricName=metric_name,
-            StartTime=start,
-            EndTime=end,
-            Period=600,
-            Statistics=['SampleCount']
-        )
-
-        return_dict = {
-            'x': 'Timestamp',
-            'y': ''
-        }
-
-        for data_point in response.get('Datapoints', []):
-            unit = data_point['Unit']
-
-            if unit != 'None':
-                return_dict['y'] = unit
-                return return_dict
-
-        return return_dict
+    @staticmethod
+    def _get_name(project_id):
+        return f'projects/{project_id}'
 
     @staticmethod
-    def _get_chart_info(namespace, dimensions, metric_name):
-        return 'line', {}
+    def _get_list_metric_filter(filter_type):
+        metric_list_in_str = []
+
+        if isinstance(filter_type, list):
+            metric_list_in_str = '","'.join(filter_type)
+        elif isinstance(filter_type, str):
+            metric_list_in_str = '","'.join([filter_type])
+
+        all_metrics_list = f'metric.type = one_of("{metric_list_in_str}")'
+
+        return all_metrics_list
+
+    @staticmethod
+    def _get_time_stamps(intervals: dict):
+        time_stamp = None
+        try:
+            start_time = datetime.strptime(intervals.get('startTime', ''), '%Y-%m-%dT%H:%M:%SZ')
+            end_time = datetime.strptime(intervals.get('endTime', ''), '%Y-%m-%dT%H:%M:%SZ')
+            sub_difference = (end_time.replace(tzinfo=timezone.utc) - start_time.replace(tzinfo=timezone.utc))/2
+            time_stamp = start_time + sub_difference
+            time_stamp.replace(tzinfo=timezone.utc)
+
+        except Exception as e:
+            print(e)
+            time_stamp = datetime.strptime(intervals.get('endTime', ''), '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+
+        return time_stamp
+
+    @staticmethod
+    def _get_metric_data_filter(metric_type: str, resource: dict):
+        try:
+            resource_type = resource.get('resource_type')  # VM_instance, gce_instance
+            resource_key = resource.get('resource_key')  # resource.labels.instance_id
+            resource_value = resource.get('resource_value')  # 1873022307818018997 => ids
+            return f'metric.type="{metric_type}" AND resource.type = "{resource_type}" AND {resource_key} = "{resource_value}"'
+
+        except Exception as e:
+            raise ERROR_NOT_SUPPORT_RESOURCE()

@@ -4,13 +4,14 @@ import time
 from spaceone.core.manager import BaseManager
 from spaceone.monitoring.error import *
 from spaceone.monitoring.connector.google_cloud_connector import GoogleCloudConnector
+
 _LOGGER = logging.getLogger(__name__)
 
 _STAT_MAP = {
     'AVERAGE': 'Average',
-    'MAX': 'Maximum',
-    'MIN': 'Minimum',
-    'SUM': 'Sum'
+    'ALIGN_MAX': 'Maximum',
+    'ALIGN_MIN': 'Minimum',
+    'ALIGN_SUM': 'Sum'
 }
 
 
@@ -37,9 +38,6 @@ class GoogleCloudManager(BaseManager):
         return self.google_cloud_connector.list_metrics(namespace, dimensions)
 
     def get_metric_data(self, schema, options, secret_data, resource, metric, start, end, period, stat):
-        if 'region_name' in resource:
-            secret_data['region_name'] = resource.get('region_name')
-
         namespace, dimensions = self._get_stackdriver_query(resource)
 
         if period is None:

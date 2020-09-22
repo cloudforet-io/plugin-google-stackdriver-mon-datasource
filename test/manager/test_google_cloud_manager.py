@@ -6,8 +6,8 @@ from spaceone.core.unittest.result import print_data
 from spaceone.core.unittest.runner import RichTestRunner
 from spaceone.core import config
 from spaceone.monitoring.error import *
-from spaceone.monitoring.connector import AWSBotoConnector
-from spaceone.monitoring.manager.google_cloud_manager import AWSManager
+from spaceone.monitoring.connector.google_cloud_connector import GoogleCloudConnector
+from spaceone.monitoring.manager.google_cloud_manager import GoogleCloudManager
 
 
 class TestMetricManager(unittest.TestCase):
