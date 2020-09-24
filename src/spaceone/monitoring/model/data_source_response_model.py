@@ -9,7 +9,7 @@ _SUPPORTED_RESOURCE_TYPE = [
     'inventory.CloudService'
 ]
 _SUPPORTED_STAT = [
-    'AVERAGE',
+    'MEAN',
     'MAX',
     'MIN',
     'SUM'
