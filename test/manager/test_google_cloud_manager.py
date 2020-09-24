@@ -6,8 +6,8 @@ from spaceone.core.unittest.result import print_data
 from spaceone.core.unittest.runner import RichTestRunner
 from spaceone.core import config
 from spaceone.monitoring.error import *
-from spaceone.monitoring.connector import AWSBotoConnector
-from spaceone.monitoring.manager.google_cloud_manager import AWSManager
+from spaceone.monitoring.connector.google_cloud_connector import GoogleCloudConnector
+from spaceone.monitoring.manager.google_cloud_manager import GoogleCloudManager
 
 
 class TestMetricManager(unittest.TestCase):
@@ -21,43 +21,26 @@ class TestMetricManager(unittest.TestCase):
     def tearDownClass(cls) -> None:
         super().tearDownClass()
 
-    @patch.object(AWSBotoConnector, '__init__', return_value=None)
-    def test_parse_arn(self, *args):
-        resource = 'arn:aws:ec2:us-east-1:123456789012:vpc/vpc-fd580e98'
-
-        aws_mgr = AWSManager()
-        aws_mgr._parse_arn(resource)
-
-    @patch.object(AWSBotoConnector, '__init__', return_value=None)
-    def test_get_cloudwatch_query(self, *args):
-        resource = 'arn:aws:ec2:ap-northeast-2:072548720675:instance/i-0547704161b1aa823'
-
-        aws_mgr = AWSManager()
-        arn = aws_mgr._parse_arn(resource)
-        namespace, dimensions = aws_mgr._get_stackdriver_query(arn, resource)
-        print_data(namespace, 'test_get_cloudwatch_query.namespace')
-        print_data(dimensions, 'test_get_cloudwatch_query.dimensions')
-
-    @patch.object(AWSBotoConnector, '__init__', return_value=None)
+    @patch.object(GoogleCloudConnector, '__init__', return_value=None)
     def test_convert_stat(self, *args):
-        aws_mgr = AWSManager()
-        stat = aws_mgr._convert_stat('AVERAGE')
+        google_cloud_mgr = GoogleCloudManager()
+        stat = google_cloud_mgr._convert_stat('MEAN')
         print_data(stat, 'test_convert_stat')
 
-    @patch.object(AWSBotoConnector, '__init__', return_value=None)
+    @patch.object(GoogleCloudConnector, '__init__', return_value=None)
     def test_convert_stat_with_invalid_stat(self, *args):
-        aws_mgr = AWSManager()
+        google_cloud_mgr = GoogleCloudManager()
         with self.assertRaises(ERROR_NOT_SUPPORT_STAT):
-            aws_mgr._convert_stat('aver')
+            google_cloud_mgr._convert_stat('AVERAGE')
 
-    @patch.object(AWSBotoConnector, '__init__', return_value=None)
+    @patch.object(GoogleCloudConnector, '__init__', return_value=None)
     def test_make_period_from_time_range(self, *args):
-        aws_mgr = AWSManager()
+        google_cloud_mgr = GoogleCloudManager()
 
         end = datetime.utcnow()
         start = end - timedelta(days=1)
 
-        period = aws_mgr._make_period_from_time_range(start, end)
+        period = google_cloud_mgr._make_period_from_time_range(start, end)
         print_data(period, 'test_make_period_from_time_range')
 
 
