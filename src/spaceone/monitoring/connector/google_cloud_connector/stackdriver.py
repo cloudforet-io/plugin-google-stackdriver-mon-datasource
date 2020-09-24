@@ -62,10 +62,12 @@ class StackDriver(object):
                     interval = metric_point.get('interval', {})
                     value = metric_point.get('value', {})
                     time_stamps.append(self._get_time_stamps(interval))
-                    values.append(value.get('doubleValue', 0))
+                    values.append(self._get_value(value))
 
                 metric_data_info['labels'] = list(map(self._convert_timestamp, time_stamps))
                 metric_data_info['values'] = values
+
+        pprint(metric_data_info)
 
         return metric_data_info
 
@@ -201,6 +203,19 @@ class StackDriver(object):
     @staticmethod
     def _get_chart_info(namespace):
         return 'line', {}
+
+    @staticmethod
+    def _get_value(value):
+        metric_value = 0
+        double = value.get('doubleValue', None)
+        int_64 = value.get('int64Value', None)
+        if double is not None:
+            metric_value = double
+        elif int_64 is not None:
+            metric_value = int_64
+
+        return metric_value
+
 
     @staticmethod
     def _get_metric_unit(unit):
