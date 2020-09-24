@@ -39,7 +39,7 @@ class MetricService(BaseService):
         metrics_info = self.google_mgr.list_metrics(params.get('schema', DEFAULT_SCHEMA), params['options'],
                                                     params['secret_data'], params['resource'])
 
-        yield self.metric_mgr.make_metrics_response(metrics_info)
+        return self.metric_mgr.make_metrics_response(metrics_info)
 
     @transaction
     @check_required(['options', 'secret_data', 'resource', 'start', 'end'])
@@ -68,4 +68,4 @@ class MetricService(BaseService):
                                                            params['start'], params['end'], params.get('period'),
                                                            params.get('stat'))
 
-        yield self.metric_mgr.make_metric_data_response(metric_data_info)
+        return self.metric_mgr.make_metric_data_response(metric_data_info)
