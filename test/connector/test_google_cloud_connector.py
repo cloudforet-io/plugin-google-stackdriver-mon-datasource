@@ -12,22 +12,7 @@ from spaceone.monitoring.manager.google_cloud_manager import GoogleCloudManager
 from pprint import pprint
 
 GOOGLE_APPLICATION_CREDENTIALS_PATH = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', None)
-GCE_INSTANCES_METRIC = [
-    "compute.googleapis.com/instance/cpu/utilization",
-    "agent.googleapis.com/cpu/utilization",
-    "agent.googleapis.com/cpu/load_5m",
-    "agent.googleapis.com/cpu/load_1m",
-    "agent.googleapis.com/cpu/load_15m",
-    "agent.googleapis.com/memory/percent_used",
-    "agent.googleapis.com/memory/bytes_used",
-    "agent.googleapis.com/disk/percent_used",
-    "agent.googleapis.com/disk/pending_operations",
-    "agent.googleapis.com/disk/bytes_used",
-    "compute.googleapis.com/instance/network/sent_packets_count",
-    "compute.googleapis.com/instance/network/sent_bytes_count",
-    "compute.googleapis.com/instance/network/received_packets_count",
-    "compute.googleapis.com/instance/network/received_bytes_count"
-]
+
 if GOOGLE_APPLICATION_CREDENTIALS_PATH is None:
     print("""
         ##################################################
@@ -71,9 +56,16 @@ class TestGoogleCloudStackDriverConnector(TestCase):
         options = {}
         secret_data = self.secret_data
         self.gcp_connector.set_connect({}, options, secret_data)
-        filter_resource = [{'key': 'metric.labels.instance_name',
-                            'value': "stackdriver-jhsong-01"}]
-        metrics_info = self.gcp_connector.list_metrics(filter_resource)
+
+        resource = {
+                       'type': 'gce_instance',
+                       'filters': [{
+                           'key': 'metric.labels.instance_name',
+                           'value': 'stackdriver-jhsong-01'
+                       }]
+                   }
+
+        metrics_info = self.gcp_connector.list_metrics(resource)
         print_data(metrics_info, 'test_list_metrics')
 
     def test_get_metric_data(self):
@@ -87,9 +79,11 @@ class TestGoogleCloudStackDriverConnector(TestCase):
 
         options = {'metric': 'compute.googleapis.com/instance/cpu/utilization',
                    'resource': {
-                       'resource_type': 'gce_instance',
-                       'resource_key': 'resource.labels.instance_id',
-                       'resource_value': '1873022307818018997'
+                       'type': 'gce_instance',
+                       'filters': [{
+                           'key': 'resource.labels.instance_id',
+                           'value': '1873022307818018997'
+                       }]
                    },
                    'aligner': 'ALIGN_SUM',
                    'start': start,
@@ -111,10 +105,15 @@ class TestGoogleCloudStackDriverConnector(TestCase):
         options = {}
         secret_data = self.secret_data
         self.gcp_connector.set_connect({}, options, secret_data)
-        filter_resource = [{'key': 'metric.labels.instance_name',
-                            'value': "stackdriver-jhsong-01"}]
+        resource = {
+                                'type': 'gce_instance',
+                                'filters': [{
+                                     'key': 'metric.labels.instance_name',
+                                     'value': 'stackdriver-jhsong-01'
+                                }]
+                }
 
-        metrics_info = self.gcp_connector.list_metrics(filter_resource)
+        metrics_info = self.gcp_connector.list_metrics(resource)
 
         end = datetime.utcnow()
         start = end - timedelta(days=30)
@@ -123,16 +122,10 @@ class TestGoogleCloudStackDriverConnector(TestCase):
         period = gcp_mgr._make_period_from_time_range(start, end)
         stat = gcp_mgr._convert_stat('SUM')
 
-        print(len(metrics_info.get('metrics', [])))
-
         for metric_info in metrics_info.get('metrics', []):
             metric_data_info = self.gcp_connector.get_metric_data(
-                {
-                    'resource_type': 'gce_instance',
-                    'resource_key': 'resource.labels.instance_id',
-                    'resource_value': '1873022307818018997'
-                },
-                metric_info.get('type', ''),
+                resource,
+                metric_info.get('key', ''),
                 start,
                 end,
                 period,
