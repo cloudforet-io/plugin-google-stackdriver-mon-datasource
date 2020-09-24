@@ -8,10 +8,10 @@ from spaceone.monitoring.connector.google_cloud_connector import GoogleCloudConn
 _LOGGER = logging.getLogger(__name__)
 
 _STAT_MAP = {
-    'AVERAGE': 'Average',
-    'ALIGN_MAX': 'Maximum',
-    'ALIGN_MIN': 'Minimum',
-    'ALIGN_SUM': 'Sum'
+    'MEAN': 'ALIGN_MEAN',
+    'MAX': 'ALIGN_MAX',
+    'MIN': 'ALIGN_MIN',
+    'SUM': 'ALIGN_SUM'
 }
 
 
@@ -51,7 +51,7 @@ class GoogleCloudManager(BaseManager):
     @staticmethod
     def _convert_stat(stat):
         if stat is None:
-            stat = 'AVERAGE'
+            stat = 'ALIGN_MEAN'
 
         if stat not in _STAT_MAP.keys():
             raise ERROR_NOT_SUPPORT_STAT(supported_stat=' | '.join(_STAT_MAP.keys()))
@@ -63,27 +63,25 @@ class GoogleCloudManager(BaseManager):
         start_time = int(time.mktime(start.timetuple()))
         end_time = int(time.mktime(end.timetuple()))
         time_delta = end_time - start_time
-
+        interval = 0
         # Max 60 point in start and end time range
         if time_delta <= 60*60:         # ~ 1h
-            return 60
+            interval = 60
         elif time_delta <= 60*60*6:     # 1h ~ 6h
-            return 60*10
+            interval = 60*10
         elif time_delta <= 60*60*12:    # 6h ~ 12h
-            return 60*20
+            interval = 60*20
         elif time_delta <= 60*60*24:    # 12h ~ 24h
-            return 60*30
+            interval = 60*30
         elif time_delta <= 60*60*24*3:  # 1d ~ 2d
-            return 60*60
+            interval = 60*60
         elif time_delta <= 60*60*24*7:  # 3d ~ 7d
-            return 60*60*3
+            interval = 60*60*3
         elif time_delta <= 60*60*24*14:  # 1w ~ 2w
-            return 60*60*6
+            interval = 60*60*6
         elif time_delta <= 60*60*24*14:  # 2w ~ 4w
-            return 60*60*12
+            interval = 60*60*12
         else:                            # 4w ~
-            return 60*60*24
+            interval = 60*60*24
 
-    @staticmethod
-    def _get_stackdriver_query(resource):
-        return resource.get('namespace'), resource.get('dimensions')
+        return str(interval)+'s'
