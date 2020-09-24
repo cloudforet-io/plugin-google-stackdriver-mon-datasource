@@ -14,27 +14,34 @@ class StackDriver(object):
         self.client = client
         self.project_id = project_id
 
-    def list_metrics(self, filter_resource=None):
-        list_google_cloud_metrics = self.list_metric_descriptors(filter_resource)
+    def list_metrics(self, resource=None):
+        list_google_cloud_metrics = self.list_metric_descriptors(resource)
         metrics_info = []
 
         for gc_metric in list_google_cloud_metrics:
             metric_kind = gc_metric.get('metricKind', '')
             value_type = gc_metric.get('valueType', '')
-            if metric_kind == 'GAUGE':
-                gc_metric_info = {
-                    'name': gc_metric.get('name', ''),
-                    'type': gc_metric.get('type', ''),
+            if metric_kind == 'GAUGE' and value_type in ['DOUBLE', 'INT64']:
+                chart_type, chart_option = self._get_chart_info(resource)
+                chart_option.update({
+                    'resource': gc_metric.get('monitoredResourceTypes', []),
                     'description': gc_metric.get('description', ''),
-                    'unit': gc_metric.get('unit'),
                     'labels': gc_metric.get('labels', []),
                     'view': 'FULL',
-                    'resource': gc_metric.get('monitoredResourceTypes', [])
+                })
+
+                gc_metric_info = {
+                    'key': gc_metric.get('type', ''),
+                    'name': gc_metric.get('name', ''),
+                    'unit': self._get_metric_unit(gc_metric.get('unit')),
+                    'chart_type': chart_type,
+                    'chart_option': chart_option
                 }
                 metrics_info.append(gc_metric_info)
 
         return {'metrics': metrics_info}
 
+    #resource, metric, start, end, period, stat
     def get_metric_data(self, resource, metric, start, end, period, stat):
         start = self.date_time_to_iso(start)
         end = self.date_time_to_iso(end)
@@ -44,7 +51,7 @@ class StackDriver(object):
             'labels': [],
             'values': []
         }
-
+        # data_source_id, resource_type, resources(list), metric, start(datetime), end(datetime), [period(int)], [stat], domain_id(meta)
         if responses:
             for metric_data in responses:
                 metric_points = metric_data.get('points', [])
@@ -62,8 +69,8 @@ class StackDriver(object):
 
         return metric_data_info
 
-    def list_metric_descriptors(self, filter_resource, **query):
-        query = self.get_list_metric_query(filter_resource, **query)
+    def list_metric_descriptors(self, resource, **query):
+        query = self.get_list_metric_query(resource, **query)
         response = self.client.projects().metricDescriptors().list(**query).execute()
         return response.get('metricDescriptors', [])
 
@@ -75,7 +82,7 @@ class StackDriver(object):
         except Exception as e:
             print(e)
 
-    def get_list_metric_query(self, filter_resource, **query):
+    def get_list_metric_query(self, resource, **query):
         '''
             name: projects/project_id
             filter: metric.type= one_of()
@@ -85,7 +92,7 @@ class StackDriver(object):
         '''
         query.update({
             'name': self._get_name(self.project_id),
-            'filter': self._get_list_metric_filter(filter_resource)
+            'filter': self._get_list_metric_filter(resource)
         })
         return query
 
@@ -124,12 +131,20 @@ class StackDriver(object):
         return f'projects/{project_id}'
 
     @staticmethod
-    def _get_list_metric_filter(filter_resource):
+    def _get_list_metric_filter(resource):
         filtering_list = []
-        for idx, filter_single in enumerate(filter_resource):
+        # {
+        #     'type': 'gce_instance',
+        #     'filters': [{
+        #         'key': 'resource.labels.instance_id',
+        #         'value': '1873022307818018997'
+        #     }]
+        # },
+        filters = resource.get('filters', [])
+        for filter_single in filters:
             key = filter_single.get('key', None)
             value = filter_single.get('value', None)
-            if key is not None and value is not None:
+            if key and value:
                 if isinstance(value, list):
                     metric_list_in_str = '","'.join(value)
                     filtering_list.append(f'{key} = one_of("{metric_list_in_str}")')
@@ -161,19 +176,41 @@ class StackDriver(object):
         return date_time.isoformat() + 'Z'
 
     @staticmethod
-    def _get_metric_data_filter(metric_type: str, resource: dict):
+    def _get_metric_data_filter(metric: str, resource: dict):
         try:
-            resource_type = resource.get('resource_type', None)     # VM_instance, gce_instance
-            resource_key = resource.get('resource_key', None)       # resource.labels.instance_id
-            resource_value = resource.get('resource_value', None)   # 1873022307818018997 => ids
-            metric_filter = f'metric.type="{metric_type}"'
+            metric_filter = f'metric.type="{metric}"'
+
+            resource_type = resource.get('type', None)     # VM_instance, gce_instance
+            resource_filters = resource.get('filters', [])       # resource.labels.instance_id
 
             if resource_type is not None:
                 metric_filter = metric_filter + f' AND resource.type = "{resource_type}"'
-            if resource_key is not None and resource_value is not None:
-                metric_filter = metric_filter + f' AND {resource_key} = "{resource_value}"'
+
+            for resource_filter in resource_filters:
+                key = resource_filter.get('key', None)
+                value = resource_filter.get('value', None)
+
+                if key and value :
+                    metric_filter = metric_filter + f' AND {key} = "{value}"'
 
             return metric_filter
 
         except Exception as e:
             raise ERROR_NOT_SUPPORT_RESOURCE()
+
+    @staticmethod
+    def _get_chart_info(namespace):
+        return 'line', {}
+
+    @staticmethod
+    def _get_metric_unit(unit):
+        unit_name = unit
+        if unit == 's':
+            unit_name = 'seconds'
+        elif unit == 'By':
+            unit_name = 'Bytes'
+
+        return {
+            'x': 'Timestamp',
+            'y': unit_name
+        }

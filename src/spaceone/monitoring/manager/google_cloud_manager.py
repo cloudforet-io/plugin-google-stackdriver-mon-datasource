@@ -32,13 +32,13 @@ class GoogleCloudManager(BaseManager):
         self.google_cloud_connector.set_connect(schema, {}, secret_data)
 
     def list_metrics(self, schema, options, secret_data, resource):
-        namespace, dimensions = self._get_stackdriver_query(resource)
+        resource_type, filters = self._get_metric_filters(resource)
 
         self.google_cloud_connector.set_connect(schema, options, secret_data)
-        return self.google_cloud_connector.list_metrics(namespace, dimensions)
+        return self.google_cloud_connector.list_metrics(filters)
 
     def get_metric_data(self, schema, options, secret_data, resource, metric, start, end, period, stat):
-        namespace, dimensions = self._get_stackdriver_query(resource)
+        resource_type, filters = self._get_metric_filters(resource)
 
         if period is None:
             period = self._make_period_from_time_range(start, end)
@@ -46,7 +46,11 @@ class GoogleCloudManager(BaseManager):
         stat = self._convert_stat(stat)
 
         self.google_cloud_connector.set_connect(schema, options, secret_data)
-        return self.google_cloud_connector.get_metric_data(namespace, dimensions, metric, start, end, period, stat)
+        return self.google_cloud_connector.get_metric_data(resource, metric, start, end, period, stat)
+
+    @staticmethod
+    def _get_metric_filters(resource):
+        return resource.get('type', None), resource.get('filters', [])
 
     @staticmethod
     def _convert_stat(stat):
@@ -85,3 +89,7 @@ class GoogleCloudManager(BaseManager):
             interval = 60*60*24
 
         return str(interval)+'s'
+
+    @staticmethod
+    def _get_chart_info(namespace, dimensions, metric_name):
+        return 'line', {}
