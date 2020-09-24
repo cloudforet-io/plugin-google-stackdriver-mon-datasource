@@ -33,27 +33,25 @@ class StackDriver(object):
                 }
                 metrics_info.append(gc_metric_info)
 
-        return {
-            'metrics': metrics_info
-        }
+        return {'metrics': metrics_info}
 
     def get_metric_data(self, resource, metric, start, end, period, stat):
         start = self.date_time_to_iso(start)
         end = self.date_time_to_iso(end)
-        response = self.list_metrics_time_series(metric, resource, start, end, period, stat)
+        responses = self.list_metrics_time_series(metric, resource, start, end, period, stat)
 
         metric_data_info = {
             'labels': [],
             'values': []
         }
 
-        if response is not None:
-            for metric_data in response:
+        if responses:
+            for metric_data in responses:
                 metric_points = metric_data.get('points', [])
-                m_points = sorted(metric_points, key=lambda point: (point['interval']['startTime']))
+                sorted_metric_points = sorted(metric_points, key=lambda point: (point['interval']['startTime']))
                 time_stamps = []
                 values = []
-                for metric_point in m_points:
+                for metric_point in sorted_metric_points:
                     interval = metric_point.get('interval', {})
                     value = metric_point.get('value', {})
                     time_stamps.append(self._get_time_stamps(interval))
@@ -92,7 +90,6 @@ class StackDriver(object):
         return query
 
     def get_metric_data_query(self, metric: str, resource: dict, start, end, period, stat, **query):
-
         '''
             SAMPLE
             "name": 'projects/286919713412',
@@ -120,9 +117,7 @@ class StackDriver(object):
     @staticmethod
     def _convert_timestamp(metric_datetime):
         timestamp = int(time.mktime(metric_datetime.timetuple()))
-        return {
-            'seconds': timestamp
-        }
+        return {'seconds': timestamp}
 
     @staticmethod
     def _get_name(project_id):
@@ -167,7 +162,6 @@ class StackDriver(object):
 
     @staticmethod
     def _get_metric_data_filter(metric_type: str, resource: dict):
-
         try:
             resource_type = resource.get('resource_type', None)     # VM_instance, gce_instance
             resource_key = resource.get('resource_key', None)       # resource.labels.instance_id

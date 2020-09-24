@@ -41,4 +41,4 @@ class DataSourceService(BaseService):
             plugin_verify_response (dict)
         """
 
-        self.aws_mgr.verify(params.get('schema', DEFAULT_SCHEMA), params['options'], params['secret_data'])
+        self.google_mgr.verify(params.get('schema', DEFAULT_SCHEMA), params['options'], params['secret_data'])
