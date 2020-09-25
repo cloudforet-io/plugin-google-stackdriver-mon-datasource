@@ -116,7 +116,7 @@ class TestGoogleCloudStackDriverConnector(TestCase):
         metrics_info = self.gcp_connector.list_metrics(resource)
 
         end = datetime.utcnow()
-        start = end - timedelta(days=30)
+        start = end - timedelta(days=4)
 
         gcp_mgr = GoogleCloudManager()
         period = gcp_mgr._make_period_from_time_range(start, end)

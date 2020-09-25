@@ -21,39 +21,56 @@ class StackDriver(object):
         for gc_metric in list_google_cloud_metrics:
             metric_kind = gc_metric.get('metricKind', '')
             value_type = gc_metric.get('valueType', '')
-            if metric_kind == 'GAUGE' and value_type in ['DOUBLE', 'INT64']:
+            labels = gc_metric.get('labels', [])
+            if metric_kind in ['DELTA', 'GAUGE'] and value_type in ['DOUBLE', 'INT64'] and \
+                    len(labels) == 1 and labels[0].get('key') == "instance_name":
                 chart_type, chart_option = self._get_chart_info(resource)
-                chart_option.update({
-                    'resource': gc_metric.get('monitoredResourceTypes', []),
-                    'description': gc_metric.get('description', ''),
-                    'labels': gc_metric.get('labels', []),
-                    'view': 'FULL',
-                })
+                # chart_option.update({
+                #     'resource': gc_metric.get('monitoredResourceTypes', []),
+                #     'description': gc_metric.get('description', ''),
+                #     'labels': gc_metric.get('labels', []),
+                #     'view': 'FULL',
+                # })
 
                 gc_metric_info = {
                     'key': gc_metric.get('type', ''),
-                    'name': gc_metric.get('name', ''),
+                    'name': gc_metric.get('displayName', ''),
                     'unit': self._get_metric_unit(gc_metric.get('unit')),
                     'chart_type': chart_type,
-                    'chart_option': chart_option
+                    'chart_options': chart_option
                 }
                 metrics_info.append(gc_metric_info)
-
+        # print('-----metrics------')
+        # print()
+        # pprint(metrics_info)
         return {'metrics': metrics_info}
 
-    #resource, metric, start, end, period, stat
     def get_metric_data(self, resource, metric, start, end, period, stat):
         start = self.date_time_to_iso(start)
         end = self.date_time_to_iso(end)
-        responses = self.list_metrics_time_series(metric, resource, start, end, period, stat)
+        response_data = self.list_metrics_time_series(resource, metric, start, end, period, stat)
+
+        # print('--------PARAMS--------')
+        # print()
+        # print(f'resource: {resource}')
+        # print(f'metric: {metric}')
+        # print(f'start: {start}')
+        # print(f'end: {end}')
+        # print(f'period: {period}')
+        # print(f'stat: {stat}')
+        # print('--------response--------')
+        # print()
+        # if not isinstance(response_data, dict):
+        #     pprint(response_data)
 
         metric_data_info = {
             'labels': [],
             'values': []
         }
-        # data_source_id, resource_type, resources(list), metric, start(datetime), end(datetime), [period(int)], [stat], domain_id(meta)
-        if responses:
-            for metric_data in responses:
+
+        if response_data:
+            metric_datas = response_data.get('time_series') if isinstance(response_data, dict) else []
+            for metric_data in metric_datas:
                 metric_points = metric_data.get('points', [])
                 sorted_metric_points = sorted(metric_points, key=lambda point: (point['interval']['startTime']))
                 time_stamps = []
@@ -76,11 +93,23 @@ class StackDriver(object):
         response = self.client.projects().metricDescriptors().list(**query).execute()
         return response.get('metricDescriptors', [])
 
-    def list_metrics_time_series(self, metric, resource, start, end, period, stat, **query):
-        query = self.get_metric_data_query(metric, resource, start, end, period, stat, **query)
+    def list_metrics_time_series(self, resource, metric, start, end, period, stat, **query):
+        query = self.get_metric_data_query(resource, metric, start, end, period, stat, **query)
         try:
             response = self.client.projects().timeSeries().list(**query).execute()
-            return response.get('timeSeries', [])
+
+            time_series = response.get('timeSeries', None)
+            unit = response.get('timeSeries', None)
+            print(f'====Response from Google: {metric} =====')
+            if time_series and unit:
+                return {
+                    'time_series': time_series,
+                    'unit': unit
+                }
+            else:
+                pprint(response)
+                return []
+
         except Exception as e:
             print(e)
 
@@ -98,7 +127,7 @@ class StackDriver(object):
         })
         return query
 
-    def get_metric_data_query(self, metric: str, resource: dict, start, end, period, stat, **query):
+    def get_metric_data_query(self, resource: dict, metric: str, start, end, period, stat, **query):
         '''
             SAMPLE
             "name": 'projects/286919713412',
@@ -110,7 +139,7 @@ class StackDriver(object):
             "interval.startTime": 2020-08-06T00:00:00Z,
             "view": 'FULL'
         '''
-
+        print(f'filter:   {self._get_metric_data_filter(metric, resource)} ')
         query.update({
             'name': self._get_name(self.project_id),
             'filter': self._get_metric_data_filter(metric, resource),
@@ -135,13 +164,11 @@ class StackDriver(object):
     @staticmethod
     def _get_list_metric_filter(resource):
         filtering_list = []
-        # {
-        #     'type': 'gce_instance',
-        #     'filters': [{
-        #         'key': 'resource.labels.instance_id',
-        #         'value': '1873022307818018997'
-        #     }]
-        # },
+        print('----resource----')
+        print()
+        pprint(resource)
+        print()
+
         filters = resource.get('filters', [])
         for filter_single in filters:
             key = filter_single.get('key', None)
@@ -161,8 +188,12 @@ class StackDriver(object):
     def _get_time_stamps(intervals: dict):
         time_stamp = None
         try:
-            start_time = datetime.strptime(intervals.get('startTime', ''), '%Y-%m-%dT%H:%M:%S.%fZ')
-            end_time = datetime.strptime(intervals.get('endTime', ''), '%Y-%m-%dT%H:%M:%S.%fZ')
+            sd_string = intervals.get('startTime', '').upper()
+            ed_string = intervals.get('endTime', '').upper()
+            formatter = '%Y-%m-%dT%H:%M:%S.%fZ' if len(sd_string[sd_string.find('T'):sd_string.find('Z')]) > 9 \
+                else '%Y-%m-%dT%H:%M:%SZ'
+            start_time = datetime.strptime(sd_string, formatter)
+            end_time = datetime.strptime(ed_string, formatter)
             sub_difference = (end_time.replace(tzinfo=timezone.utc) - start_time.replace(tzinfo=timezone.utc))/2
             time_stamp = start_time + sub_difference
             time_stamp.replace(tzinfo=timezone.utc)
@@ -175,7 +206,8 @@ class StackDriver(object):
 
     @staticmethod
     def date_time_to_iso(date_time):
-        return date_time.isoformat() + 'Z'
+        date_format = date_time.isoformat()
+        return date_format[0:date_format.find('+')] + 'Z' if '+' in date_format else date_format + 'Z'
 
     @staticmethod
     def _get_metric_data_filter(metric: str, resource: dict):
@@ -221,9 +253,19 @@ class StackDriver(object):
     def _get_metric_unit(unit):
         unit_name = unit
         if unit == 's':
-            unit_name = 'seconds'
+            unit_name = 'Seconds'
         elif unit == 'By':
             unit_name = 'Bytes'
+        elif unit == '10^2.%':
+            unit_name = 'Percentage'
+        elif unit == '1' or unit == 1:
+            unit_name = 'Count'
+        elif unit == 's{idle}':
+            unit_name = 'Idle/s'
+        elif unit == 's{uptime}':
+            unit_name = 'Uptime/s'
+        elif unit == 's{CPU}':
+            unit_name = 'CPU/s'
 
         return {
             'x': 'Timestamp',
