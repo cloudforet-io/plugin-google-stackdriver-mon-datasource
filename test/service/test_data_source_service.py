@@ -5,9 +5,9 @@ from spaceone.core.unittest.result import print_data
 from spaceone.core.unittest.runner import RichTestRunner
 from spaceone.core import config
 from spaceone.core.transaction import Transaction
-from spaceone.monitoring.connector import AWSBotoConnector
+from spaceone.monitoring.connector.google_cloud_connector import GoogleCloudConnector
 from spaceone.monitoring.service.data_source_service import DataSourceService
-from spaceone.monitoring.info.data_source_info import PluginVerifyResponse
+from spaceone.monitoring.info.data_source_info import PluginInfo
 
 
 class TestDataSourceService(unittest.TestCase):
@@ -25,8 +25,20 @@ class TestDataSourceService(unittest.TestCase):
     def tearDownClass(cls) -> None:
         super().tearDownClass()
 
-    @patch.object(AWSBotoConnector, '__init__', return_value=None)
-    @patch.object(AWSBotoConnector, 'create_session', return_value=None)
+    @patch.object(GoogleCloudConnector, '__init__', return_value=None)
+    def test_init_data_source(self, *args):
+        params = {
+            'options': {}
+        }
+
+        self.transaction.method = 'init'
+        data_source_svc = DataSourceService(transaction=self.transaction)
+        response = data_source_svc.init(params.copy())
+        print_data(response, 'test_init_data_source')
+        PluginInfo(response)
+
+    @patch.object(GoogleCloudConnector, '__init__', return_value=None)
+    @patch.object(GoogleCloudConnector, 'set_connect', return_value=None)
     def test_verify_data_source(self, *args):
         params = {
             'options': {},
@@ -37,7 +49,6 @@ class TestDataSourceService(unittest.TestCase):
         data_source_svc = DataSourceService(transaction=self.transaction)
         for response in data_source_svc.verify(params.copy()):
             print_data(response, 'test_verify_data_source')
-            PluginVerifyResponse(response)
 
 
 if __name__ == "__main__":

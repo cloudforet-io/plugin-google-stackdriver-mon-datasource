@@ -20,15 +20,14 @@ class GoogleCloudManager(BaseManager):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.google_cloud_connector: GoogleCloudConnector = self.locator.get_connector('GoogleCloudConnector')
 
     def verify(self, schema, options, secret_data):
         """ Check connection
         """
-        self.google_cloud_connector: GoogleCloudConnector = self.locator.get_connector('GoogleCloudConnector')
         self.google_cloud_connector.set_connect(schema, options, secret_data)
 
     def set_connector(self, schema, secret_data):
-        self.google_cloud_connector: GoogleCloudConnector = self.locator.get_connector('GoogleCloudConnector')
         self.google_cloud_connector.set_connect(schema, {}, secret_data)
 
     def list_metrics(self, schema, options, secret_data, resource):
