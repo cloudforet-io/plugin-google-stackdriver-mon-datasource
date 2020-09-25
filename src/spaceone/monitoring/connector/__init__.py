@@ -1,1 +1,1 @@
-from spaceone.monitoring.connector.google_cloud_connector.stackdriver import StackDriver
+from spaceone.monitoring.connector.google_cloud_connector import GoogleCloudConnector

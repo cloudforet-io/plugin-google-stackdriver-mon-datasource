@@ -16,7 +16,6 @@ _STAT_MAP = {
 
 
 class GoogleCloudManager(BaseManager):
-    google_cloud_connector = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -31,10 +30,10 @@ class GoogleCloudManager(BaseManager):
         self.google_cloud_connector.set_connect(schema, {}, secret_data)
 
     def list_metrics(self, schema, options, secret_data, resource):
-        resource_type, filters = self._get_metric_filters(resource)
+
 
         self.google_cloud_connector.set_connect(schema, options, secret_data)
-        return self.google_cloud_connector.list_metrics(filters)
+        return self.google_cloud_connector.list_metrics(resource)
 
     def get_metric_data(self, schema, options, secret_data, resource, metric, start, end, period, stat):
         if period is None:
