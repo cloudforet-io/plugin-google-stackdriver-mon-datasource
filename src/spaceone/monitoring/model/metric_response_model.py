@@ -5,6 +5,12 @@ from schematics.types.compound import ModelType
 __all__ = ['MetricsResponseModel', 'MetricDataResponseModel']
 
 
+class ChartOptionModel(Model):
+    resource = ListType(StringType, default=[])
+    description = StringType(default='')
+    labels = ListType(DictType(StringType), default=[])
+    view = StringType(default='FULL')
+
 class MetricModel(Model):
     key = StringType(required=True)
     name = StringType(required=True)
