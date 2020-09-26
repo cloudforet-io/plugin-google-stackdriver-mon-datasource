@@ -63,6 +63,9 @@ class StackDriver(object):
         # print(f'    stat: {stat}')
         # print('--------response--------')
         # print()
+        # pprint(response_data)
+        # print()
+        # print('========================')
 
         metric_data_info = {
             'labels': [],
@@ -85,7 +88,11 @@ class StackDriver(object):
                 metric_data_info['labels'] = list(map(self._convert_timestamp, time_stamps))
                 metric_data_info['values'] = values
 
-        #pprint(metric_data_info)
+        # print('--------response--------')
+        # print()
+        # pprint(metric_data_info)
+        # print()
+        # print('========================')
 
         return metric_data_info
 
@@ -174,9 +181,10 @@ class StackDriver(object):
     @staticmethod
     def _get_list_metric_filter(resource):
         filtering_list = []
-        print('----metric Resource----')
-        print(resource)
 
+        print('----metric Resource with func: list_metric----')
+        print(resource)
+        resource_type = resource.get('type', None)
         filters = resource.get('filters', [])
         for filter_single in filters:
             key = filter_single.get('key', None)
@@ -188,7 +196,8 @@ class StackDriver(object):
                 elif isinstance(value, str):
                     filtering_list.append(f'{key} = "{value}"')
 
-        all_metrics_list = ' AND '.join(filtering_list)
+        all_metrics_list = ' AND '.join(filtering_list) + f' AND resource.type = "{resource_type}"' \
+            if resource_type else ' AND '.join(filtering_list)
 
         return all_metrics_list
 
