@@ -1,3 +1,3 @@
 CONNECTORS = {
-    'AWSBotoConnector': {}
+    'GoogleCloudConnector': {}
 }
