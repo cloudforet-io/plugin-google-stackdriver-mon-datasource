@@ -32,7 +32,7 @@ jobs:
               echo "::set-output name=BRANCH::$(echo ${{ github.event.inputs.tag }} | cut -c 2-4 | awk '{print "release-"$1}')"
           elif [[ "${{ github.event_name }}" == "push" ]]
             then
-              echo "TAG=$(echo ${{ github.ref }} | cut -c 11-)" >> $GITHUB_ENV
+              echo "TAG=$(echo ${{ github.ref }} | cut -c 11-)" >> $GITHUB_ENV:
               echo "::set-output name=TAG::$(echo ${{ github.ref }} | cut -c 11-)"
               echo "BRANCH=$(echo ${{ github.ref }} | cut -c 12-14 | awk '{print "release-"$1}')" >> $GITHUB_ENV
               echo "::set-output name=BRANCH::$(echo ${{ github.ref }} | cut -c 12-14 | awk '{print "release-"$1}')"
