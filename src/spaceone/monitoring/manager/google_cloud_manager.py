@@ -36,8 +36,11 @@ class GoogleCloudManager(BaseManager):
         return self.google_cloud_connector.list_metrics(resource)
 
     def get_metric_data(self, schema, options, secret_data, resource, metric, start, end, period, stat):
+
         if period is None:
             period = self._make_period_from_time_range(start, end)
+        else:
+            period = str(period) + 's'
 
         stat = self._convert_stat(stat)
 
