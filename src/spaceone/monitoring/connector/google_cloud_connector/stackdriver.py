@@ -6,7 +6,7 @@ from spaceone.monitoring.error import *
 
 __all__ = ['StackDriver']
 _LOGGER = logging.getLogger(__name__)
-
+PERCENT_METRIC = ['compute.googleapis.com/instance/cpu/utilization']
 
 class StackDriver(object):
 
@@ -35,6 +35,8 @@ class StackDriver(object):
                 #     'view': 'FULL',
                 # })
 
+                self._set_filtered_metric_unit(gc_metric.get('unit'), key)
+
                 gc_metric_info = {
                     'key': key,
                     'name': gc_metric.get('displayName', ''),
@@ -42,12 +44,14 @@ class StackDriver(object):
                     'chart_type': chart_type,
                     'chart_options': chart_option
                 }
+
                 metrics_info.append(gc_metric_info)
 
         print(f'total number of metrics: {len(metrics_info)}')
         return {'metrics': metrics_info}
 
     def get_metric_data(self, resource, metric, start, end, period, stat):
+        multiply = True if metric in PERCENT_METRIC else False
         start = self.date_time_to_iso(start)
         end = self.date_time_to_iso(end)
         response_data = self.list_metrics_time_series(resource, metric, start, end, period, stat)
@@ -83,7 +87,7 @@ class StackDriver(object):
                     interval = metric_point.get('interval', {})
                     value = metric_point.get('value', {})
                     time_stamps.append(self._get_time_stamps(interval))
-                    values.append(self._get_value(value))
+                    values.append(self._get_value(value, multiply))
 
                 metric_data_info['labels'] = list(map(self._convert_timestamp, time_stamps))
                 metric_data_info['values'] = values
@@ -254,7 +258,7 @@ class StackDriver(object):
         return 'line', {}
 
     @staticmethod
-    def _get_value(value):
+    def _get_value(value, multiply):
         metric_value = 0
         double = value.get('doubleValue', None)
         int_64 = value.get('int64Value', None)
@@ -263,7 +267,7 @@ class StackDriver(object):
         elif int_64 is not None:
             metric_value = int_64
 
-        return metric_value
+        return metric_value * 100 if multiply else metric_value
 
     @staticmethod
     def _metric_filters(labels, key):
@@ -273,6 +277,11 @@ class StackDriver(object):
         elif len(labels) == 1 and labels[0].get('key') == "instance_name":
             is_proper_metric = False if 'guest' in key else True
         return is_proper_metric
+
+    @staticmethod
+    def _set_filtered_metric_unit(unit, metric_name):
+        if unit == '10^2.%' and metric_name not in PERCENT_METRIC:
+            PERCENT_METRIC.append(metric_name)
 
     @staticmethod
     def _get_metric_unit(unit):
