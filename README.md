@@ -25,9 +25,9 @@ Please, set authentication privilege for followings:
 
 ### Contents
 
-* [Cloud Monitoring](#[Cloud Monitoring])
+* [Cloud Monitoring](/#[Cloud Monitoring])
 
-####[Cloud Monitoring](https://cloud.google.com/monitoring/docs/apis)
+#### [Cloud Monitoring](https://cloud.google.com/monitoring/docs/apis)
 
 - Project (monitoring) 
     - Scopes (OAuth)
