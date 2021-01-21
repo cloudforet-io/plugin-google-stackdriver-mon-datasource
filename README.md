@@ -33,6 +33,7 @@ Please, set authentication privilege for followings:
 #### [Cloud Monitoring](https://cloud.google.com/monitoring/docs/apis)
 
 - Project (monitoring) 
+
     - Scopes (OAuth)
         - https://www.googleapis.com/auth/cloud-platform
         - https://www.googleapis.com/auth/monitoring
