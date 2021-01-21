@@ -25,16 +25,11 @@ Please, set authentication privilege for followings:
 
 ### Contents
 
-* [Cloud Monitoring](#abs)
+* [Cloud Monitoring](#Cloud Monitoring)
 
 
+---
 
-
-
-
-
-
-#### abs 
 #### [Cloud Monitoring](https://cloud.google.com/monitoring/docs/apis)
 
 - Project (monitoring) 
