@@ -6,9 +6,8 @@ from spaceone.core.unittest.result import print_data
 from spaceone.core.unittest.runner import RichTestRunner
 from spaceone.core import config
 from spaceone.core.transaction import Transaction
-from spaceone.monitoring.connector import AWSBotoConnector
 from spaceone.monitoring.service.metric_service import MetricService
-from spaceone.monitoring.info.metric_info import PluginMetricDataResponse, PluginMetricsResponse
+from spaceone.monitoring.info.metric_info import MetricsInfo, MetricDataInfo
 
 
 class TestMetricService(unittest.TestCase):
@@ -26,9 +25,6 @@ class TestMetricService(unittest.TestCase):
     def tearDownClass(cls) -> None:
         super().tearDownClass()
 
-    @patch.object(AWSBotoConnector, '__init__', return_value=None)
-    @patch.object(AWSBotoConnector, 'create_session', return_value=None)
-    @patch.object(AWSBotoConnector, 'list_metrics')
     def test_list_metrics(self, mock_list_metrics, *args):
         mock_list_metrics.return_value = {
             'metrics': [
@@ -58,11 +54,8 @@ class TestMetricService(unittest.TestCase):
         metric_svc = MetricService(transaction=self.transaction)
         for response in metric_svc.list(params.copy()):
             print_data(response, 'test_list_metrics')
-            PluginMetricsResponse(response)
+            MetricsInfo(response)
 
-    @patch.object(AWSBotoConnector, '__init__', return_value=None)
-    @patch.object(AWSBotoConnector, 'create_session', return_value=None)
-    @patch.object(AWSBotoConnector, 'get_metric_data')
     def test_get_metric_data(self, mock_get_metric_data, *args):
         end = datetime.utcnow()
         start = end - timedelta(days=1)
@@ -97,7 +90,7 @@ class TestMetricService(unittest.TestCase):
         metric_svc = MetricService(transaction=self.transaction)
         for response in metric_svc.get_data(params.copy()):
             print_data(response, 'test_get_metric_data')
-            PluginMetricDataResponse(response)
+            MetricDataInfo(response)
 
 
 if __name__ == "__main__":
