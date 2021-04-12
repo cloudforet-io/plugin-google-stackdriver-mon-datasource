@@ -31,7 +31,6 @@ class GoogleCloudManager(BaseManager):
 
     def list_metrics(self, schema, options, secret_data, resource):
 
-
         self.google_cloud_connector.set_connect(schema, options, secret_data)
         return self.google_cloud_connector.list_metrics(resource)
 
