@@ -3,10 +3,11 @@ import logging
 from spaceone.core import utils
 from datetime import datetime, timezone
 from spaceone.monitoring.error import *
+from pprint import pprint
 
 __all__ = ['StackDriver']
 _LOGGER = logging.getLogger(__name__)
-PERCENT_METRIC = ['compute.googleapis.com/instance/cpu/utilization']
+PERCENT_METRIC = ['10^2.%']
 
 class StackDriver(object):
 
@@ -51,10 +52,12 @@ class StackDriver(object):
         return {'metrics': metrics_info}
 
     def get_metric_data(self, resource, metric, start, end, period, stat):
-        multiply = True if metric in PERCENT_METRIC else False
+
         start = self.date_time_to_iso(start)
         end = self.date_time_to_iso(end)
         response_data = self.list_metrics_time_series(resource, metric, start, end, period, stat)
+        current_unit = response_data.get('unit', '')
+        multiply = True if current_unit in PERCENT_METRIC else False
 
         # print()
         # print('--------PARAMS--------')
@@ -73,13 +76,15 @@ class StackDriver(object):
 
         metric_data_info = {
             'labels': [],
-            'values': []
+            'resource_values': {}
         }
 
         if response_data:
-            metric_datas = response_data.get('time_series') if isinstance(response_data, dict) else []
-            for metric_data in metric_datas:
+            metric_data_set = response_data.get('time_series') if isinstance(response_data, dict) else []
+            resource_ids = response_data.get('resource_ids', {})
+            for metric_data in metric_data_set:
                 metric_points = metric_data.get('points', [])
+                label_resource = metric_data.get('resource', {}).get('labels', {})
                 sorted_metric_points = sorted(metric_points, key=lambda point: (point['interval']['startTime']))
                 time_stamps = []
                 values = []
@@ -89,21 +94,13 @@ class StackDriver(object):
                     time_stamps.append(self._get_time_stamps(interval))
                     values.append(self._get_value(value, multiply))
 
-                metric_data_info['labels'] = list(map(self._convert_timestamp, time_stamps))
-                metric_data_info['values'] = values
+                if not metric_data_info.get('labels'):
+                    metric_data_info['labels'] = list(map(self._convert_timestamp, time_stamps))
+                instance_id = label_resource.get('instance_id', '')
 
-        # print('--------response--------')
-        # print()
-        # pprint(metric_data_info)
-        # print()
-        # print('========================')
+                metric_data_info['resource_values'].update({resource_ids[instance_id]: values})
 
         return metric_data_info
-
-    def list_metrics_time_series_sampler(self, resource, **query):
-        query = self.get_list_metric_query(resource, **query)
-        response = self.client.projects().metricDescriptors().list(**query).execute()
-        return response.get('metricDescriptors', [])
 
     def list_metric_descriptors(self, resource, **query):
         query = self.get_list_metric_query(resource, **query)
@@ -111,22 +108,23 @@ class StackDriver(object):
         return response.get('metricDescriptors', [])
 
     def list_metrics_time_series(self, resource, metric, start, end, period, stat, **query):
-        query = self.get_metric_data_query(resource, metric, start, end, period, stat, **query)
+        query_format_resource = self._get_metric_filter_in_google_cloud_format(resource)
+
+        query = self.get_metric_data_query(query_format_resource, metric, start, end, period, stat, **query)
+
         try:
             response = self.client.projects().timeSeries().list(**query).execute()
 
             time_series = response.get('timeSeries', None)
-            unit = response.get('timeSeries', None)
+            unit = response.get('unit', None)
 
             if time_series and unit:
                 return {
                     'time_series': time_series,
-                    'unit': unit
+                    'unit': unit,
+                    'resource_ids': query_format_resource.get('resource_ids', {})
                 }
             else:
-                print(f'====Empty Response=====')
-                print(f'metric_tye with {metric}')
-                print(f'response: {response}')
                 return []
 
         except Exception as e:
@@ -161,9 +159,11 @@ class StackDriver(object):
             "interval.startTime": 2020-08-06T00:00:00Z,
             "view": 'FULL'
         '''
+        metric_filter = self._get_metric_data_filter(metric, resource)
+
         query.update({
             'name': self._get_name(self.project_id),
-            'filter': self._get_metric_data_filter(metric, resource),
+            'filter': metric_filter,
             'aggregation_alignmentPeriod': period,
             'aggregation_crossSeriesReducer': 'REDUCE_NONE',
             'aggregation_perSeriesAligner': stat,
@@ -231,6 +231,7 @@ class StackDriver(object):
 
     @staticmethod
     def _get_metric_data_filter(metric: str, resource: dict):
+
         try:
             metric_filter = f'metric.type="{metric}"'
 
@@ -240,14 +241,22 @@ class StackDriver(object):
             if resource_type is not None:
                 metric_filter = metric_filter + f' AND resource.type = "{resource_type}"'
 
+            filtering_list = []
+
             for resource_filter in resource_filters:
                 key = resource_filter.get('key', None)
                 value = resource_filter.get('value', None)
 
-                if key and value :
-                    metric_filter = metric_filter + f' AND {key} = "{value}"'
+                if key and value:
+                    if isinstance(value, list):
+                        metric_list_in_str = '","'.join(value)
+                        filtering_list.append(f'{key} = one_of("{metric_list_in_str}")')
+                    elif isinstance(value, str):
+                        filtering_list.append(f'{key} = "{value}"')
 
-            return metric_filter
+            all_metrics_list = ' AND '.join(filtering_list)
+
+            return metric_filter + f' AND {all_metrics_list}'
 
         except Exception as e:
             raise ERROR_NOT_SUPPORT_RESOURCE()
@@ -276,6 +285,32 @@ class StackDriver(object):
         elif len(labels) == 1 and labels[0].get('key') == "instance_name":
             is_proper_metric = False if 'guest' in key else True
         return is_proper_metric
+
+    @staticmethod
+    def _get_metric_filter_in_google_cloud_format(resources):
+        resource_filter_key = None
+        resource_filter_values = []
+        resource_ids = {}
+        resource_type = None
+
+        for resource in resources.get('resources', []):
+            if resource_type is None:
+                resource_type = resource.get('type')
+            for single_filter in resource.get('filters', []):
+                key = single_filter.get('key')
+                value = single_filter.get('value')
+                resource_ids.update({value:resource.get('resource_id')})
+                if resource_filter_key is None:
+                    resource_filter_key = key
+                resource_filter_values.append(value)
+
+        return {
+            'filters': [{
+                'key': resource_filter_key,
+                'value': resource_filter_values}],
+            'resource_ids': resource_ids,
+            'type': resource_type
+        }
 
     @staticmethod
     def _set_filtered_metric_unit(unit, metric_name):
