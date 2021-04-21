@@ -47,7 +47,7 @@ class GoogleCloudManager(BaseManager):
     @staticmethod
     def _convert_stat(stat):
         if stat is None:
-            stat = 'ALIGN_MEAN'
+            stat = 'MEAN'
 
         if stat not in _STAT_MAP.keys():
             raise ERROR_NOT_SUPPORT_STAT(supported_stat=' | '.join(_STAT_MAP.keys()))
