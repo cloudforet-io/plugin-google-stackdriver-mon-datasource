@@ -48,7 +48,6 @@ class StackDriver(object):
 
                 metrics_info.append(gc_metric_info)
 
-        print(f'total number of metrics: {len(metrics_info)}')
         return {'metrics': metrics_info}
 
     def get_metric_data(self, resource, metric, start, end, period, stat):
@@ -184,9 +183,6 @@ class StackDriver(object):
     @staticmethod
     def _get_list_metric_filter(resource):
         filtering_list = []
-
-        print('----metric Resource with func: list_metric----')
-        print(resource)
         resource_type = resource.get('type', None)
         filters = resource.get('filters', [])
         for filter_single in filters:
