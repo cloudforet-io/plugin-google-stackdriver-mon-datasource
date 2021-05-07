@@ -36,8 +36,6 @@ class StackDriver(object):
                 #     'view': 'FULL',
                 # })
 
-                self._set_filtered_metric_unit(gc_metric.get('unit'), key)
-
                 gc_metric_info = {
                     'key': key,
                     'name': gc_metric.get('displayName', ''),
@@ -79,8 +77,9 @@ class StackDriver(object):
         }
 
         if response_data:
-            metric_data_set = response_data.get('time_series') if isinstance(response_data, dict) else []
+            metric_data_set = response_data.get('time_series', [])
             resource_ids = response_data.get('resource_ids', {})
+
             for metric_data in metric_data_set:
                 metric_points = metric_data.get('points', [])
                 label_resource = metric_data.get('resource', {}).get('labels', {})
@@ -107,29 +106,28 @@ class StackDriver(object):
         return response.get('metricDescriptors', [])
 
     def list_metrics_time_series(self, resource, metric, start, end, period, stat, **query):
-        query_format_resource = self._get_metric_filter_in_google_cloud_format(resource)
 
+        query_format_resource = self._get_metric_filter_in_google_cloud_format(resource)
         query = self.get_metric_data_query(query_format_resource, metric, start, end, period, stat, **query)
 
         try:
             response = self.client.projects().timeSeries().list(**query).execute()
-
             time_series = response.get('timeSeries', None)
             unit = response.get('unit', None)
 
-            if time_series and unit:
-                return {
-                    'time_series': time_series,
-                    'unit': unit,
-                    'resource_ids': query_format_resource.get('resource_ids', {})
-                }
-            else:
-                return []
+            metric_time_series = {'resource_ids': query_format_resource.get('resource_ids', {})}
+
+            if time_series is not None:
+                metric_time_series.update({'time_series': time_series})
+
+            if unit is not None:
+                metric_time_series.update({'unit': unit})
+
+            return metric_time_series
 
         except Exception as e:
             print(f'====Error to get Metric=====')
             print(f'metric_tye with {metric}')
-            print(f'response: {response}')
             print(e)
 
     def get_list_metric_query(self, resource, **query):
@@ -307,11 +305,6 @@ class StackDriver(object):
             'resource_ids': resource_ids,
             'type': resource_type
         }
-
-    @staticmethod
-    def _set_filtered_metric_unit(unit, metric_name):
-        if unit == '10^2.%' and metric_name not in PERCENT_METRIC:
-            PERCENT_METRIC.append(metric_name)
 
     @staticmethod
     def _get_metric_unit(unit):
