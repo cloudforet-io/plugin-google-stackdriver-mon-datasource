@@ -56,6 +56,8 @@ class StackDriver(object):
         current_unit = response_data.get('unit', '')
         multiply = True if current_unit in PERCENT_METRIC else False
 
+        stackdriver_identifier = self._get_identifier(resource)
+
         # print()
         # print('--------PARAMS--------')
         # print()
@@ -94,28 +96,23 @@ class StackDriver(object):
 
                 if not metric_data_info.get('labels'):
                     metric_data_info['labels'] = list(map(self._convert_timestamp, time_stamps))
-                instance_id = label_resource.get('instance_id', '')
+                
+                instance_id = label_resource.get(stackdriver_identifier, '')
 
                 metric_data_info['resource_values'].update({resource_ids[instance_id]: values})
 
         return metric_data_info
 
     def list_metric_descriptors(self, resource, **query):
-
         query = self.get_list_metric_query(resource, **query)
         _LOGGER.debug(f'[list_metric_descriptors] query: {query}')
-        print('###################')
-        pprint(query)
         response = self.client.projects().metricDescriptors().list(**query).execute()
-        pprint(response)
-        print()
         return response.get('metricDescriptors', [])
 
     def list_metrics_time_series(self, resource, metric, start, end, period, stat, **query):
-
         query_format_resource = self._get_metric_filter_in_google_cloud_format(resource)
         query = self.get_metric_data_query(query_format_resource, metric, start, end, period, stat, **query)
-
+        _LOGGER.debug(f'[list_metrics_time_series] query: {query}')
         try:
             response = self.client.projects().timeSeries().list(**query).execute()
             time_series = response.get('timeSeries', None)
@@ -178,6 +175,18 @@ class StackDriver(object):
             'view': 'FULL'
         })
         return query
+
+    @staticmethod
+    def _get_identifier(resource):
+        stack_driver_param = resource.get('resources', [])
+        pre_ide = None
+        for identifier in stack_driver_param:
+            if pre_ide is None:
+                pre_ide = identifier.get('identifier', '')
+            elif pre_ide is not None and identifier.get('identifier', '') == pre_ide:
+                break
+
+        return pre_ide
 
     @staticmethod
     def _convert_timestamp(metric_datetime):
