@@ -251,7 +251,7 @@ class StackDriver(object):
             resource_filters = resource.get('filters', [])       # resource.labels.instance_id
 
             if resource_type is not None:
-                metric_filter = metric_filter + f' AND resource.type = "{resource_type}"'
+                metric_filter = metric_filter + f' AND metric.type = starts_with("{resource_type}")'
 
             filtering_list = []
 
