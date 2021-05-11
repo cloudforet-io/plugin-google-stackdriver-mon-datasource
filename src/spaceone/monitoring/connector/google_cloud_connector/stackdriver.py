@@ -250,8 +250,8 @@ class StackDriver(object):
             resource_type = resource.get('type', None)     # VM_instance, gce_instance
             resource_filters = resource.get('filters', [])       # resource.labels.instance_id
 
-            if resource_type is not None:
-                metric_filter = metric_filter + f' AND metric.type = starts_with("{resource_type}")'
+            # if resource_type is not None:
+            #     metric_filter = metric_filter + f' AND resource.type = "{resource_type}"'
 
             filtering_list = []
 
