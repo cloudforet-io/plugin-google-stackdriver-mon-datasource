@@ -101,7 +101,9 @@ class StackDriver(object):
         return metric_data_info
 
     def list_metric_descriptors(self, resource, **query):
+
         query = self.get_list_metric_query(resource, **query)
+        _LOGGER.debug(f'[list_metric_descriptors] query: {query}')
         response = self.client.projects().metricDescriptors().list(**query).execute()
         return response.get('metricDescriptors', [])
 
@@ -158,6 +160,8 @@ class StackDriver(object):
         '''
         metric_filter = self._get_metric_data_filter(metric, resource)
 
+        _LOGGER.debug(f'[get_data] query with metrics: {metric}, query:{metric_filter}')
+
         query.update({
             'name': self._get_name(self.project_id),
             'filter': metric_filter,
@@ -180,9 +184,16 @@ class StackDriver(object):
 
     @staticmethod
     def _get_list_metric_filter(resource):
+
+        if 'data' in resource:
+            data = resource.get('data', {})
+            resource = data.get('stackdriver') if 'stackdriver' in data else resource
+
         filtering_list = []
+
         resource_type = resource.get('type', None)
         filters = resource.get('filters', [])
+
         for filter_single in filters:
             key = filter_single.get('key', None)
             value = filter_single.get('value', None)
@@ -193,7 +204,10 @@ class StackDriver(object):
                 elif isinstance(value, str):
                     filtering_list.append(f'{key} = "{value}"')
 
-        all_metrics_list = ' AND '.join(filtering_list) + f' AND resource.type = "{resource_type}"' \
+        #  metric.type = starts_with("cloudsql.googleapis.com")
+        #  AND metric.type = starts_with("cloudsql.googleapis.com")
+
+        all_metrics_list = ' AND '.join(filtering_list) + f' AND metric.type = starts_with("{resource_type}")' \
             if resource_type else ' AND '.join(filtering_list)
 
         return all_metrics_list
@@ -226,14 +240,18 @@ class StackDriver(object):
     @staticmethod
     def _get_metric_data_filter(metric: str, resource: dict):
 
+        if 'data' in resource:
+            data = resource.get('data', {})
+            resource = data.get('stackdriver') if 'stackdriver' in data else resource
+
         try:
             metric_filter = f'metric.type="{metric}"'
 
             resource_type = resource.get('type', None)     # VM_instance, gce_instance
             resource_filters = resource.get('filters', [])       # resource.labels.instance_id
 
-            if resource_type is not None:
-                metric_filter = metric_filter + f' AND resource.type = "{resource_type}"'
+            # if resource_type is not None:
+            #     metric_filter = metric_filter + f' AND resource.type = "{resource_type}"'
 
             filtering_list = []
 
