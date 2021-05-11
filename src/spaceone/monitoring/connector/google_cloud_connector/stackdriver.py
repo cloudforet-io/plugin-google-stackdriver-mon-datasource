@@ -24,9 +24,9 @@ class StackDriver(object):
             value_type = gc_metric.get('valueType', '')
             labels = gc_metric.get('labels', [])
             key = gc_metric.get('type', '')
-            if metric_kind in ['DELTA', 'GAUGE'] \
-                    and value_type in ['DOUBLE', 'INT64'] \
-                    and self._metric_filters(labels, gc_metric.get('type', '')):
+
+            if metric_kind in ['DELTA', 'GAUGE'] and value_type in ['DOUBLE', 'INT64'] : #\
+                    #and self._metric_filters(labels, gc_metric.get('type', '')):
                 chart_type, chart_option = self._get_chart_info(resource)
                 # for later if Front-end has something to do for the future
                 # chart_option.update({
@@ -104,7 +104,11 @@ class StackDriver(object):
 
         query = self.get_list_metric_query(resource, **query)
         _LOGGER.debug(f'[list_metric_descriptors] query: {query}')
+        print('###################')
+        pprint(query)
         response = self.client.projects().metricDescriptors().list(**query).execute()
+        pprint(response)
+        print()
         return response.get('metricDescriptors', [])
 
     def list_metrics_time_series(self, resource, metric, start, end, period, stat, **query):
@@ -144,6 +148,7 @@ class StackDriver(object):
             'name': self._get_name(self.project_id),
             'filter': self._get_list_metric_filter(resource)
         })
+        pprint(query)
         return query
 
     def get_metric_data_query(self, resource: dict, metric: str, start, end, period, stat, **query):
