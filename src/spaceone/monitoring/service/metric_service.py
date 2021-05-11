@@ -63,11 +63,11 @@ class MetricService(BaseService):
         Returns:
             plugin_metric_data_response (dict)
         """
-        start_time = time.time()
+        #start_time = time.time()
         metric_data_info = self.google_mgr.get_metric_data(params.get('schema', DEFAULT_SCHEMA), params['options'],
                                                            params['secret_data'], params['resource'], params['metric'],
                                                            params['start'], params['end'], params.get('period'),
                                                            params.get('stat'))
 
-        print(f'** get_data at service {time.time() - start_time} Seconds **')
+        #print(f'** get_data at service {time.time() - start_time} Seconds **')
         return self.metric_mgr.make_metric_data_response(metric_data_info)
