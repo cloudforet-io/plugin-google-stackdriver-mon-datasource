@@ -3,7 +3,6 @@ import logging
 from spaceone.core import utils
 from datetime import datetime, timezone
 from spaceone.monitoring.error import *
-from pprint import pprint
 
 __all__ = ['StackDriver']
 _LOGGER = logging.getLogger(__name__)
@@ -145,7 +144,6 @@ class StackDriver(object):
             'name': self._get_name(self.project_id),
             'filter': self._get_list_metric_filter(resource)
         })
-        pprint(query)
         return query
 
     def get_metric_data_query(self, resource: dict, metric: str, start, end, period, stat, **query):

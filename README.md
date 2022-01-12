@@ -42,4 +42,7 @@ Please, set authentication privilege for followings:
         - https://www.googleapis.com/auth/cloud-platform
         - https://www.googleapis.com/auth/monitoring
         - https://www.googleapis.com/auth/monitoring.read
+  
+    - Service Endpoint
+        - https://monitoring.googleapis.com/v3/
         
