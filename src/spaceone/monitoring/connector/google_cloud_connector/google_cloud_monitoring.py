@@ -103,7 +103,7 @@ class GoogleCloudMonitoring(object):
             try:
                 name = _query['name']
                 _filter = _query['filter']
-                _merge_filter = f"metric.type = starts_with('{_filter['metric_type']}')"
+                _merge_filter = f"metric.type = starts_with(\"{_filter['metric_type']}\")"
 
                 or_filter_list = []
                 for _label in _filter.get('labels', []):
@@ -171,7 +171,7 @@ class GoogleCloudMonitoring(object):
 
     @staticmethod
     def set_metric_filter(metric_filter):
-        _metric_filter = f"metric.type = starts_with('{metric_filter['metric_type']}')"
+        _metric_filter = f"metric.type = starts_with(\"{metric_filter['metric_type']}\")"
 
         filter_list = []
         for _label in metric_filter.get('labels', []):
