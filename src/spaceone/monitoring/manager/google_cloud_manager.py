@@ -29,16 +29,15 @@ class GoogleCloudManager(BaseManager):
     def set_connector(self, schema, secret_data):
         self.google_cloud_connector.set_connect(schema, {}, secret_data)
 
-    def list_metrics(self, schema, options, secret_data, resource):
-
+    def list_metrics(self, schema, options, secret_data, query):
         self.google_cloud_connector.set_connect(schema, options, secret_data)
-        return self.google_cloud_connector.list_metrics(resource)
+        return self.google_cloud_connector.list_metrics(query)
 
-    def get_metric_data(self, schema, options, secret_data, resource, metric, start, end, period, stat):
+    def get_metric_data(self, schema, options, secret_data, metric_query, metric, start, end, period, stat):
         interval = self._make_period_from_time_range(start, end) if period is None else str(period) + 's'
         stat = self._convert_stat(stat)
         self.google_cloud_connector.set_connect(schema, options, secret_data)
-        return self.google_cloud_connector.get_metric_data(resource, metric, start, end, interval, stat)
+        return self.google_cloud_connector.get_metric_data(metric_query, metric, start, end, interval, stat)
 
     @staticmethod
     def _get_metric_filters(resource):
