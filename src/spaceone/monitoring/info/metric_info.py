@@ -1,4 +1,3 @@
-import functools
 from spaceone.api.monitoring.plugin import metric_pb2
 from spaceone.core.pygrpc.message_type import *
 
@@ -9,14 +8,14 @@ def MetricInfo(metric):
     info = {
         'key': metric['key'],
         'name': metric['name'],
-        'unit': change_struct_type(metric['unit']),
-        'chart_type': metric['chart_type']
+        'metric_query': change_struct_type(metric['metric_query'])
     }
 
-    if 'chart_options' in metric:
-        info.update({
-            'chart_options': change_struct_type(metric['chart_options'])
-        })
+    if 'unit' in metric:
+        info.update({'unit': change_struct_type(metric['unit'])})
+
+    if 'group' in metric:
+        info.update({'group': metric['group']})
 
     return metric_pb2.MetricInfo(**info)
 
@@ -32,6 +31,6 @@ def MetricsInfo(result):
 def MetricDataInfo(metric_data):
     info = {
         'labels': change_list_value_type(metric_data.get('labels', [])),
-        'resource_values': change_struct_type(metric_data['resource_values'])
+        'values': change_struct_type(metric_data['values'])
     }
     return metric_pb2.MetricDataInfo(**info)

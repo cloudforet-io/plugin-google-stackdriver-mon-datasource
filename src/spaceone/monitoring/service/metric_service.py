@@ -1,8 +1,5 @@
 import logging
-import time
 from spaceone.core.service import *
-
-from spaceone.monitoring.error import *
 from spaceone.monitoring.manager.google_cloud_manager import GoogleCloudManager
 from spaceone.monitoring.manager.metric_manager import MetricManager
 
@@ -21,28 +18,28 @@ class MetricService(BaseService):
         self.metric_mgr: MetricManager = self.locator.get_manager('MetricManager')
 
     @transaction
-    @check_required(['options', 'secret_data', 'resource'])
+    @check_required(['options', 'secret_data', 'query'])
     def list(self, params):
-        """Get Google StackDriver metrics
+        """Get Google Cloud Monitoring metrics
 
         Args:
             params (dict): {
                 'schema': 'str',
                 'options': 'dict',
                 'secret_data': 'dict',
-                'resource': 'dict'
+                'query': 'dict'
             }
 
         Returns:
             plugin_metrics_response (dict)
         """
         metrics_info = self.google_mgr.list_metrics(params.get('schema', DEFAULT_SCHEMA), params['options'],
-                                                    params['secret_data'], params['resource'])
+                                                    params['secret_data'], params['query'])
 
         return self.metric_mgr.make_metrics_response(metrics_info)
 
     @transaction
-    @check_required(['options', 'secret_data', 'resource', 'start', 'end'])
+    @check_required(['options', 'secret_data', 'metric_query', 'start', 'end'])
     @change_timestamp_value(['start', 'end'], timestamp_format='iso8601')
     def get_data(self, params):
         """Get Google StackDriver metric data
@@ -52,7 +49,7 @@ class MetricService(BaseService):
                 'schema': 'str',
                 'options': 'dict',
                 'secret_data': 'dict',
-                'resource': 'str',
+                'metric_query': 'dict',
                 'metric': 'str',
                 'start': 'timestamp',
                 'end': 'timestamp',
@@ -63,11 +60,10 @@ class MetricService(BaseService):
         Returns:
             plugin_metric_data_response (dict)
         """
-        #start_time = time.time()
         metric_data_info = self.google_mgr.get_metric_data(params.get('schema', DEFAULT_SCHEMA), params['options'],
-                                                           params['secret_data'], params['resource'], params['metric'],
+                                                           params['secret_data'],
+                                                           params['metric_query'], params['metric'],
                                                            params['start'], params['end'], params.get('period'),
                                                            params.get('stat'))
 
-        #print(f'** get_data at service {time.time() - start_time} Seconds **')
         return self.metric_mgr.make_metric_data_response(metric_data_info)
