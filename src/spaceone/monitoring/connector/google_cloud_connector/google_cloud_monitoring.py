@@ -37,7 +37,7 @@ class GoogleCloudMonitoring(object):
                             'unit': self._get_metric_unit(gc_metric.get('unit')),
                             'metric_query': {
                                 'name': query['name'],
-                                'resource_id': metric_filter.get('resource_id'),
+                                'resource_id': query['resource_id'],
                                 'filter': {
                                     'metric_type': key,
                                     'labels': metric_filter.get('labels')
