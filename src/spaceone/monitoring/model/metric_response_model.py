@@ -9,8 +9,8 @@ class MetricModel(Model):
     key = StringType(required=True)
     name = StringType(required=True)
     unit = DictType(StringType, required=True)
-    chart_type = StringType(required=True)
-    chart_options = DictType(StringType, default={})
+    group = StringType(serialize_when_none=False)
+    metric_query = DictType(BaseType, default={})
 
 
 class MetricsModel(Model):
