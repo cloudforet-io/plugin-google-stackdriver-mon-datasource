@@ -112,7 +112,7 @@ class GoogleCloudMonitoring(object):
 
                 or_filter_list = []
                 for _label in _filter.get('labels', []):
-                    or_filter_list.append(f"{_label['key']} = {_label['value']}")
+                    or_filter_list.append(f"{_label['key']} = \"{_label['value']}\"")
 
                 or_merge_filter = ' OR '.join(or_filter_list)
                 _metric_filter = ' AND '.join([_merge_filter, or_merge_filter])
@@ -180,7 +180,7 @@ class GoogleCloudMonitoring(object):
 
         filter_list = []
         for _label in metric_filter.get('labels', []):
-            filter_list.append(f"{_label['key']} = {_label['value']}")
+            filter_list.append(f"{_label['key']} = \"{_label['value']}\"")
 
         or_merge_filter = ' OR '.join(filter_list)
         _metric_filter = ' AND '.join([_metric_filter, or_merge_filter])
