@@ -80,19 +80,24 @@ class GoogleCloudMonitoring(object):
         return response.get('metricDescriptors', [])
 
     def set_metric_data_labels_values(self, cloud_service_id, time_series, multiply):
-        metric_points = time_series.get('points', [])
+        labels = []
+        values = {}
 
-        time_stamps = []
-        values = []
-        sorted_metric_points = sorted(metric_points, key=lambda point: (point['interval']['startTime']))
-        for metric_point in sorted_metric_points:
-            interval = metric_point.get('interval', {})
-            value = metric_point.get('value', {})
-            time_stamps.append(self._get_time_stamps(interval))
-            values.append(self._get_value(value, multiply))
+        if time_series:
+            time_series = time_series[0]
+            metric_points = time_series.get('points', [])
 
-        labels = list(map(self._convert_timestamp, time_stamps))
-        values = {cloud_service_id: values}
+            time_stamps = []
+            values = []
+            sorted_metric_points = sorted(metric_points, key=lambda point: (point['interval']['startTime']))
+            for metric_point in sorted_metric_points:
+                interval = metric_point.get('interval', {})
+                value = metric_point.get('value', {})
+                time_stamps.append(self._get_time_stamps(interval))
+                values.append(self._get_value(value, multiply))
+
+            labels = list(map(self._convert_timestamp, time_stamps))
+            values = {cloud_service_id: values}
 
         return labels, values
 
