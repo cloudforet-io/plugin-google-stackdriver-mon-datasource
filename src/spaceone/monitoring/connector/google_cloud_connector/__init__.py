@@ -10,10 +10,10 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class GoogleCloudConnector(BaseConnector):
-    def __init__(self, transaction=None, config=None):
+    def __init__(self, *args, **kwargs):
         self.client = None
         self.project_id = None
-        super().__init__(transaction, config)
+        super().__init__(*args, **kwargs)
 
     def set_connect(self, schema, options: dict, secret_data: dict):
         """
