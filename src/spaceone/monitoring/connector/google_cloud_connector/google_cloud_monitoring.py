@@ -24,7 +24,6 @@ class GoogleCloudMonitoring(object):
                     'name': query['name'],
                     'filter': self.set_metric_filter(metric_filter)
                 }
-                # print(f"Filter:{_query.get("filter")}")
 
                 for gc_metric in self.list_metric_descriptors(_query):
                     metric_kind = gc_metric.get('metricKind', '')
@@ -109,22 +108,17 @@ class GoogleCloudMonitoring(object):
             try:
                 name = _query['name']
                 _filter = _query['filter']
-                # _merge_filter = f"metric.type = starts_with(\"{_filter['metric_type']}\")"
-                _merge_filter = f'metric.type = "{_filter['metric_type']}"'
+                _merge_filter = f"metric.type = starts_with(\"{_filter['metric_type']}\")"
 
                 or_filter_list = []
                 for _label in _filter.get('labels', []):
                     or_filter_list.append(f"{_label['key']} = \"{_label['value']}\"")
 
-                # or_merge_filter = ' OR '.join(or_filter_list)
-                # _metric_filter = ' AND '.join([_merge_filter, or_merge_filter])
-                or_merge_filter = ' '.join(or_filter_list)
-                _metric_filter = ' '.join([_merge_filter, or_merge_filter])
-                
+                or_merge_filter = ' OR '.join(or_filter_list)
+                _metric_filter = ' AND '.join([_merge_filter, or_merge_filter])
 
                 query = self.get_metric_data_query(name, _metric_filter, metric, start, end, period, stat)
                 _LOGGER.debug(f'[list_metrics_time_series] query: {query}')
-                # print(f"list_metrics_time_series:{query}")
 
                 response = self.client.projects().timeSeries().list(**query).execute()
                 response_data.update({'unit': response.get('unit')})
@@ -182,18 +176,14 @@ class GoogleCloudMonitoring(object):
 
     @staticmethod
     def set_metric_filter(metric_filter):
-        # _metric_filter = f"metric.type = starts_with(\"{metric_filter['metric_type']}\")"
-        _metric_filter = f'metric.type : "{metric_filter['metric_type']}" '
-        
+        _metric_filter = f"metric.type = starts_with(\"{metric_filter['metric_type']}\")"
 
         filter_list = []
         for _label in metric_filter.get('labels', []):
             filter_list.append(f"{_label['key']} = \"{_label['value']}\"")
 
-        # or_merge_filter = ' OR '.join(filter_list)
-        # _metric_filter = ' AND '.join([_metric_filter, or_merge_filter])
-        or_merge_filter = ' '.join(filter_list)
-        _metric_filter = ' '.join([_metric_filter, or_merge_filter])
+        or_merge_filter = ' OR '.join(filter_list)
+        _metric_filter = ' AND '.join([_metric_filter, or_merge_filter])
 
         return _metric_filter
 
