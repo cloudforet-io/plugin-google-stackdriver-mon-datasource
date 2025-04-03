@@ -1,4 +1,4 @@
 google-auth
 google-api-python-client
 schematics
-spaceone-core==1.12.37
+grpcio>=1.64.1
