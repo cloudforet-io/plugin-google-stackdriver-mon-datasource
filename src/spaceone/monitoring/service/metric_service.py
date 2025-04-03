@@ -33,9 +33,8 @@ class MetricService(BaseService):
         Returns:
             plugin_metrics_response (dict)
         """
-        metrics_info = self.google_mgr.list_metrics(
-            params.get('schema', DEFAULT_SCHEMA), params['options'],
-            params['secret_data'], params['query'])
+        metrics_info = self.google_mgr.list_metrics(params.get('schema', DEFAULT_SCHEMA), params['options'],
+                                                    params['secret_data'], params['query'])
 
         return self.metric_mgr.make_metrics_response(metrics_info)
 
@@ -62,9 +61,9 @@ class MetricService(BaseService):
             plugin_metric_data_response (dict)
         """
         metric_data_info = self.google_mgr.get_metric_data(params.get('schema', DEFAULT_SCHEMA), params['options'],
-                                                params['secret_data'],
-                                                params['metric_query'], params['metric'],
-                                                params['start'], params['end'], params.get('period'),
-                                                params.get('stat'))
+                                                           params['secret_data'],
+                                                           params['metric_query'], params['metric'],
+                                                           params['start'], params['end'], params.get('period'),
+                                                           params.get('stat'))
 
         return self.metric_mgr.make_metric_data_response(metric_data_info)
