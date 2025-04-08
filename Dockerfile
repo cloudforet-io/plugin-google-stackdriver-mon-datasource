@@ -10,8 +10,7 @@ RUN apt update && apt upgrade -y
 
 COPY pkg/*.txt ${PKG_DIR}/
 RUN pip install --upgrade pip && \
-    pip install --upgrade --use-deprecated=legacy-resolver -r ${PKG_DIR}/pip_requirements.txt && \
-    pip install --upgrade spaceone-api
+    pip install --upgrade --use-deprecated=legacy-resolver -r ${PKG_DIR}/pip_requirements.txt 
 
 COPY src ${SRC_DIR}
 

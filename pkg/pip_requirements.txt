@@ -1,7 +1,4 @@
 google-auth
 google-api-python-client
 schematics
-spaceone-core==1.12.37
-grpcio>=1.64.1
-grpcio-health-checking==1.64.1
-grpcio-reflection==1.64.1
+spaceone-api==2.0.399
