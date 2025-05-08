@@ -1,4 +1,4 @@
 google-auth
 google-api-python-client
 schematics
-spaceone-api==2.0.399
+spaceone-api>=1.0.0,<2.0.0
