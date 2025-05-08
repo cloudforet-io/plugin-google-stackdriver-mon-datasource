@@ -108,7 +108,7 @@ class GoogleCloudMonitoring(object):
             try:
                 name = _query['name']
                 _filter = _query['filter']
-                _merge_filter = f"metric.type = starts_with(\"{_filter['metric_type']}\")"
+                _merge_filter = f"metric.type = \"{_filter['metric_type']}\""
 
                 or_filter_list = []
                 for _label in _filter.get('labels', []):
