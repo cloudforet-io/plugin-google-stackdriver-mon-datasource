@@ -82,9 +82,9 @@ class GoogleCloudConnector(BaseConnector):
         https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
 
         if https_proxy:
-            # _LOGGER.info(
-            #     f"** Using proxy in environment variable HTTPS_PROXY/https_proxy: {https_proxy}"
-            # ) # TOO MANY LOGGING
+            _LOGGER.info(
+                f"** Using proxy in environment variable HTTPS_PROXY/https_proxy: {https_proxy}"
+            )
             try:
                 proxy_url = https_proxy.replace("http://", "").replace("https://", "")
                 if ":" in proxy_url:
